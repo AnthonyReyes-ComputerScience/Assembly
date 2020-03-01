@@ -1,0 +1,283 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/05/18 20:01:49
+scratch							     Page 1 - 1
+
+
+				Title scratch
+
+				;---------------code only for non commercial use ------------------------
+
+				.MODEL MEDIUM ;
+				.STACK 200H ; Set up 512 bytes of stack space
+				.386
+
+				;===========================================================================
+
+ 0000				.DATA
+
+ = 000D				CR EQU 13
+ = 000A				LF EQU 10
+ 0000 001E			X1 dw 30
+ 0002 00AA			X2 dw 170
+ 0004 001E			Y1 dw 30
+ 0006 00AA			Y2 dw 170
+ = 0050				color equ 50h
+ 0008 0010			IncF dw 10h
+ 000A 0000			DeX Dw 0000h
+ 000C 0000			DeY Dw 0000h
+
+
+ 000E 0D 0A 20 54 48 41		AllDone DB CR, LF, " THAT LINE WAS CODED BY :", CR, LF, "PRATIK M TAMBE", CR, LF, "I appreciate your feedback"
+       54 20 4C 49 4E 45
+       20 57 41 53 20 43
+       4F 44 45 44 20 42
+       59 20 3A 0D 0A 50
+       52 41 54 49 4B 20
+       4D 20 54 41 4D 42
+       45 0D 0A 49 20 61
+       70 70 72 65 63 69
+       61 74 65 20 79 6F
+       75 72 20 66 65 65
+       64 62 61 63 6B
+ 0055  0D 0A 20 27 38 30	DB CR, LF, " '80X86 ASSEMBLY LANGUAGE FOR FUN!!!' ", "$"
+       58 38 36 20 41 53
+       53 45 4D 42 4C 59
+       20 4C 41 4E 47 55
+       41 47 45 20 46 4F
+       52 20 46 55 4E 21
+       21 21 27 20 24
+
+ 0000				.CODE
+				;--------------------------------------------------------------------
+
+ 0000				InitializeMCGA PROC
+
+ 0000  B8 A000			MOV AX, 0A000h
+ 0003  8E C0			MOV ES, AX ; ES now points to the VGA
+
+ 0005  B4 00			MOV AH, 00H ; Set video mode
+ 0007  B0 13			MOV AL, 13H ; Mode 13h
+ 0009  CD 10			INT 10H ; We are now in 3201700017056
+ 000B  CB			RET
+
+ 000C				InitializeMCGA ENDP
+
+ 000C				TextMode PROC
+ 000C  B4 00			MOV AH, 00H ; Set video mode
+ 000E  B0 03			MOV AL, 03H ; Mode 03h
+ 0010  CD 10			INT 10H ; Enter 801705306 mode
+
+ 0012  BA 000E R		MOV DX, OFFSET AllDone ; DS:DX points to the ending message
+ 0015  B4 09			MOV AH, 09H
+ 0017  CD 21			INT 21H ; Display the ending message
+ 0019  CB			RET
+ 001A				TextMode ENDP
+
+
+				;CODE BY PRATIK M TAMBE
+
+				;----------------------------------------------------------------------------
+				; PROCEDURE ADAPTED FROM Adam's Assembler Tutorial SERIES
+				; MANY THANKS TO HIM!!!  ;---------------------------------------------------------------------------
+ 001A				DRAWLINE2 PROC
+
+ 001A  A1 0002 R		mov ax, X2 ; Move X2 into AX ;
+ 001D  2B 06 0000 R		sub ax, X1 ; Get the horiz length of the line - X2 - X1 ;
+ 0021  73 02			jnc @Dont1 ; Did X2 - X1 yield a negative result? ;
+ 0023  F7 D8			neg ax ; Yes, so make the horiz length positive ;
+
+ 0025				@Dont1:
+ 0025  A3 000A R		mov DeX, ax ; Now, move the horiz length of line into DeX ;
+ 0028  A1 0006 R		mov ax, Y2 ; Move Y2 into AX ;
+ 002B  2B 06 0004 R		sub ax, Y1 ; Subtract Y1 from Y2, giving the vert length ;
+ 002F  73 02			jnc @Dont2 ; Was it negative? ;
+ 0031  F7 D8			neg ax ; Yes, so make it positive ;
+
+ 0033				@Dont2:
+ 0033  A3 000C R		mov DeY, ax ; Move the vert length into DeY ;
+ 0036  3B 06 000A R		cmp ax, DeX ; Compare the vert length to horiz length ;
+ 003A  76 6B			jbe @OtherLine ; If vert was <= horiz length then jump ;
+
+ 003C  A1 0004 R		mov ax, Y1 ; Move Y1 into AX ;
+ 003F  3B 06 0006 R		cmp ax, Y2 ; Compare Y1 to Y2 ;
+ 0043  76 19			jbe @DontSwap1 ; If Y1 <= Y2 then jump, else... ;
+ 0045  8B 1E 0006 R		mov bx, Y2 ; Put Y2 in BX ;
+ 0049  89 1E 0004 R		mov Y1, bx ; Put Y2 in Y1 ;
+ 004D  A3 0006 R		mov Y2, ax ; Move Y1 into Y2 ;
+				; So after all that..... ;
+				; Y1 = Y2 and Y2 = Y1 ;
+
+ 0050  A1 0000 R		mov ax, X1 ; Put X1 into AX ;
+ 0053  8B 1E 0002 R		mov bx, X2 ; Put X2 into BX ;
+ 0057  89 1E 0000 R		mov X1, bx ; Put X2 into X1 ;
+ 005B  A3 0002 R		mov X2, ax ; Put X1 into X2 ;
+
+ 005E				@DontSwap1:
+ 005E  C7 06 0008 R 0001	mov IncF, 1 ; Put 1 in IncF, ie, plot another pixel ;
+ 0064  A1 0000 R		mov ax, X1 ; Put X1 into AX ;
+ 0067  3B 06 0002 R		cmp ax, X2 ; Compare X1 with X2 ;
+ 006B  76 04			jbe @SkipNegate1 ; If X1 <= X2 then jump, else... ;
+ 006D  F7 1E 0008 R		neg IncF ; Negate IncF ;
+
+ 0071				@SkipNegate1:
+ 0071  A1 0004 R		mov ax, Y1 ; Move Y1 into AX ;
+ 0074  BB 0140			mov bx, 320 ; Move 320 into BX ;
+ 0077  F7 E3			mul bx ; Multiply 320 by Y1 ;
+ 0079  8B F8			mov di, ax ; Put the result into DI ;
+ 007B  03 3E 0000 R		add di, X1 ; Add X1 to DI, and tada - offset in DI ;
+ 007F  8B 1E 000C R		mov bx, DeY ; Put DeY in BX ;
+ 0083  8B CB			mov cx, bx ; Put DeY in CX ;
+ 0085  B8 A000			mov ax, 0A000h ; Put the segment to plot in, in AX ;
+ 0088  8E C0			mov es, ax ; ES points to the VGA ;
+ 008A  B2 50			mov dl, Color ; Put the color to use in DL ;
+ 008C  8B 36 000A R		mov si, DeX ; Point SI to DeX ;
+
+ 0090				@DrawLoop1:
+ 0090  26: 88 15		mov es:[di], dl ; Put the color to plot with, DL, at ES:DI ;
+ 0093  81 C7 0140		add di, 320 ; Add 320 to DI, ie, next line down ;
+ 0097  2B DE			sub bx, si ; Subtract DeX from BX, DeY ;
+ 0099  73 08			jnc @GoOn1 ; Did it yield a negative result? ;
+ 009B  03 1E 000C R		add bx, DeY ; Yes, so add DeY to BX ;
+ 009F  03 3E 0008 R		add di, IncF ; Add the amount to increment by to DI ;
+
+ 00A3				@GoOn1:
+ 00A3  E2 EB			loop @DrawLoop1 ; No negative result, so plot another pixel ;
+ 00A5  EB 66			jmp @ExitLine ; We're all done, so outta here! ;
+
+ 00A7				@OtherLine:
+ 00A7  A1 0000 R		mov ax, X1 ; Move X1 into AX ;
+ 00AA  3B 06 0002 R		cmp ax, X2 ; Compare X1 to X2 ;
+ 00AE  76 19			jbe @DontSwap2 ; Was X1 <= X2 ? ;
+ 00B0  8B 1E 0002 R		mov bx, X2 ; No, so move X2 into BX ;
+ 00B4  89 1E 0000 R		mov X1, bx ; Move X2 into X1 ;
+ 00B8  A3 0002 R		mov X2, ax ; Move X1 into X2 ;
+ 00BB  A1 0004 R		mov ax, Y1 ; Move Y1 into AX ;
+ 00BE  8B 1E 0006 R		mov bx, Y2 ; Move Y2 into BX ;
+ 00C2  89 1E 0004 R		mov Y1, bx ; Move Y2 into Y1 ;
+ 00C6  A3 0006 R		mov Y2, ax ; Move Y1 into Y2 ;
+
+ 00C9				@DontSwap2:
+ 00C9  C7 06 0008 R 0140	mov IncF, 320 ; Move 320 into IncF, ie, next pixel is on next row ;
+ 00CF  A1 0004 R		mov ax, Y1 ; Move Y1 into AX ;
+ 00D2  3B 06 0006 R		cmp ax, Y2 ; Compare Y1 to Y2 ;
+ 00D6  76 04			jbe @SkipNegate2 ; Was Y1 <= Y2 ? ;
+ 00D8  F7 1E 0008 R		neg IncF ; No, so negate IncF
+
+ 00DC				@SkipNegate2:
+ 00DC  A1 0004 R		mov ax, Y1 ; Move Y1 into AX ;
+ 00DF  BB 0140			mov bx, 320 ; Move 320 into BX ;
+ 00E2  F7 E3			mul bx ; Multiply AX by 320 ;
+ 00E4  8B F8			mov di, ax ; Move the result into DI ;
+ 00E6  03 3E 0000 R		add di, X1 ; Add X1 to DI, giving us the offset ;
+ 00EA  8B 1E 000A R		mov bx, DeX ; Move DeX into BX ;
+ 00EE  8B CB			mov cx, bx ; Move BX into CX ;
+ 00F0  B8 A000			mov ax, 0A000h ; Move the address of the VGA into AX ;
+ 00F3  8E C0			mov es, ax ; Point ES to the VGA ;
+ 00F5  B2 50			mov dl, Color ; Move the color to plot with in DL ;
+ 00F7  8B 36 000C R		mov si, DeY ; Move DeY into SI ;
+
+ 00FB				@DrawLoop2:
+ 00FB  26: 88 15		mov es:[di], dl ; Put the byte in DL at ES:DI ;
+ 00FE  47			inc di ; Increment DI by one, the next pixel ;
+ 00FF  2B DE			sub bx, si ; Subtract SI from BX ;
+ 0101  73 08			jnc @GoOn2 ; Did it yield a negative result? ;
+ 0103  03 1E 000A R		add bx, DeX ; Yes, so add DeX to BX ;
+ 0107  03 3E 0008 R		add di, IncF ; Add IncF to DI ;
+
+ 010B				@GoOn2:
+ 010B  E2 EE			loop @DrawLoop2 ; Keep on plottin' ;
+
+ 010D				@ExitLine:
+				; All done! ;
+				; End;
+ 010D  CB			RET
+ 010E				DRAWLINE2 ENDP
+
+ 010E				Start:
+
+ 010E  B8 ---- R		MOV AX, @DATA
+ 0111  8E D8			MOV DS, AX ; DS now points to the data segment.
+
+ 0113  0E E8 FEE9		CALL InitializeMCGA ; ENTER MODE 13H
+
+ 0117  0E E8 FEFF		CALL DRAWLINE2 ; CALL PROCEDURE TO DRAW ACTUAL LINE
+
+
+ 011B  B4 00			MOV AH, 00H ; Yes, so get the key
+ 011D  CD 16			INT 16H
+
+ 011F  0E E8 FEE9		CALL TextMode
+
+ 0123  B4 00			MOV AH, 00H ; Yes, so get the key
+ 0125  CD 16			INT 16H
+
+
+
+ 0127  B4 4C			MOV AH, 4CH
+ 0129  B0 00			MOV AL, 00H
+ 012B  CD 21			INT 21H ; Return to DOS/QUIT PROGRAM.
+				END Start
+Microsoft (R) Macro Assembler Version 6.11		    11/05/18 20:01:49
+scratch							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 007E	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+SCRATCH_TEXT . . . . . . . . . .	16 Bit	 012D	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+DRAWLINE2  . . . . . . . . . . .	P Far	 001A	  SCRATCH_TEXT	Length= 00F4 Public
+  @Dont1 . . . . . . . . . . . .	L Near	 0025	  SCRATCH_TEXT	
+  @Dont2 . . . . . . . . . . . .	L Near	 0033	  SCRATCH_TEXT	
+  @DontSwap1 . . . . . . . . . .	L Near	 005E	  SCRATCH_TEXT	
+  @SkipNegate1 . . . . . . . . .	L Near	 0071	  SCRATCH_TEXT	
+  @DrawLoop1 . . . . . . . . . .	L Near	 0090	  SCRATCH_TEXT	
+  @GoOn1 . . . . . . . . . . . .	L Near	 00A3	  SCRATCH_TEXT	
+  @OtherLine . . . . . . . . . .	L Near	 00A7	  SCRATCH_TEXT	
+  @DontSwap2 . . . . . . . . . .	L Near	 00C9	  SCRATCH_TEXT	
+  @SkipNegate2 . . . . . . . . .	L Near	 00DC	  SCRATCH_TEXT	
+  @DrawLoop2 . . . . . . . . . .	L Near	 00FB	  SCRATCH_TEXT	
+  @GoOn2 . . . . . . . . . . . .	L Near	 010B	  SCRATCH_TEXT	
+  @ExitLine  . . . . . . . . . .	L Near	 010D	  SCRATCH_TEXT	
+InitializeMCGA . . . . . . . . .	P Far	 0000	  SCRATCH_TEXT	Length= 000C Public
+TextMode . . . . . . . . . . . .	P Far	 000C	  SCRATCH_TEXT	Length= 000E Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0001h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0000h	 
+@Model . . . . . . . . . . . . .	Number	 0004h	 
+@code  . . . . . . . . . . . . .	Text   	 SCRATCH_TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+AllDone  . . . . . . . . . . . .	Byte	 000E	  _DATA	
+CR . . . . . . . . . . . . . . .	Number	 000Dh	 
+DeX  . . . . . . . . . . . . . .	Word	 000A	  _DATA	
+DeY  . . . . . . . . . . . . . .	Word	 000C	  _DATA	
+IncF . . . . . . . . . . . . . .	Word	 0008	  _DATA	
+LF . . . . . . . . . . . . . . .	Number	 000Ah	 
+Start  . . . . . . . . . . . . .	L Near	 010E	  SCRATCH_TEXT	
+X1 . . . . . . . . . . . . . . .	Word	 0000	  _DATA	
+X2 . . . . . . . . . . . . . . .	Word	 0002	  _DATA	
+Y1 . . . . . . . . . . . . . . .	Word	 0004	  _DATA	
+Y2 . . . . . . . . . . . . . . .	Word	 0006	  _DATA	
+color  . . . . . . . . . . . . .	Number	 0050h	 
+
+	   0 Warnings
+	   0 Errors

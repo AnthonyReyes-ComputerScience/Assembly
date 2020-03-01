@@ -1,0 +1,149 @@
+Microsoft (R) Macro Assembler Version 6.11		    09/09/18 20:52:32
+Funks							     Page 1 - 1
+
+
+				Title Funks
+				;Anthony Reyes
+				;Project 2
+				;cs240
+
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.8086
+
+				Polynomial Proto
+				Factorial Proto
+				Fibonacci Proto
+				PrintString Proto
+				PrintHexDigit Proto
+
+ 0000				.data
+ 0000 2017			eb	WORD	2017h
+ 0002 59 6F 75 20 66 72		OOF	BYTE	"You frinkin did it you cool kid, you", 0
+       69 6E 6B 69 6E 20
+       64 69 64 20 69 74
+       20 79 6F 75 20 63
+       6F 6F 6C 20 6B 69
+       64 2C 20 79 6F 75
+       00
+ 0027 30 31 32 33 34 35		harry	byte	"0123456789ABCDEF", 0
+       36 37 38 39 41 42
+       43 44 45 46 00
+
+ 0000				.code
+
+ 0000				main Proc
+
+ 0000  B8 ---- R			mov	ax, @data
+ 0003  8E D8				mov	ds, ax
+
+					;test for polynom guuud
+					;mov	ax, -2
+					;mov	bx, 2
+					;mov	cx, 2
+					;mov	dx, 2
+					;call	Polynomial ; answer in ax
+					;mov 	dx, ax
+					;call	writeint
+
+					;test for fact
+ 0005  B8 0005				mov	ax, 5
+ 0008  E8 0000 E			call	Factorial
+ 000B  8B D0				mov	dx, ax
+ 000D  E8 0000 E			call	writeint
+ 0010  E8 0000 E			call	dumpregs
+
+					;test for fib  guuud
+					;call	readint
+					;mov	ax, dx
+					;call	Fibonacci
+					;mov	dx, ax
+					;call	writeint
+
+					;test for printstring
+
+					;mov	dx, OFFSET OOF
+					;call	PrintString
+
+					;test for printhexdigit
+					;mov	dx, 0236h
+					;call	PrintHexDigit
+
+ 0013  B8 4C00				mov	ax, 4C00h
+ 0016  CD 21				int	21h
+ 0018  C3				ret
+ 0019				main endp
+				end main
+Microsoft (R) Macro Assembler Version 6.11		    09/09/18 20:52:32
+Funks							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0038	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0019	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Factorial  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Fibonacci  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Polynomial . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0019 Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+OOF  . . . . . . . . . . . . . .	Byte	 0002	  _DATA	
+eb . . . . . . . . . . . . . . .	Word	 0000	  _DATA	
+harry  . . . . . . . . . . . . .	Byte	 0027	  _DATA	
+
+	   0 Warnings
+	   0 Errors

@@ -1,0 +1,1055 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/12/18 12:42:43
+DosTunes						     Page 1 - 1
+
+
+				Title DosTunes
+
+				.model huge
+
+				.386
+				.stack 100h
+ 0000				.data
+ 0000				.code
+
+ = 4C00				DOSEXIT=4C00h
+ = 0021				DOS = 21h
+ = 0010				BIOS = 10h
+
+ 0000				.data
+ 0000 0034 0067 00D0 019F	Af	word 	52, 103, 208, 415, 830, 1661, 3322
+       033E 067D 0CFA
+ 000E				notes 	label 	word
+ 000E 0037 006E 00DC 01B8	A	word 	55, 110, 220, 440, 880, 1760, 3520
+       0370 06E0 0DC0
+ 001C 003A 0074 00E9 01D2	As_Bf	word 	58, 116, 233, 466, 932, 1865, 3729
+       03A4 0749 0E91
+ 002A 003D 007B 00F7 01ED	B	word 	61, 123, 247, 493, 988, 1975, 3951
+       03DC 07B7 0F6F
+ 0038 003D 007B 00F7 01ED	none	word 	61, 123, 247, 493, 988, 1975, 3951
+       03DC 07B7 0F6F
+ 0046 0020 0041 0082 0106	C1 	word 	32, 65,  130, 262, 523, 1046, 2093
+       020B 0416 082D
+ 0054 0022 0045 008A 0115	Cs_Df	word 	34, 69,  138, 277, 554, 1108, 2217
+       022A 0454 08A9
+ 0062 0024 0049 0093 0125	D	word 	36, 73,  147, 293, 587, 1174, 2349
+       024B 0496 092D
+ 0070 0027 004D 009B 0137	Ds_Ef	word 	39, 77,  155, 311, 622, 1244, 2489
+       026E 04DC 09B9
+ 007E 0029 0052 00A5 0149	E	word 	41, 82,  165, 329, 659, 1318, 2637
+       0293 0526 0A4D
+ 008C 003D 007B 00F7 01ED	none2	word 	61, 123, 247, 493, 988, 1975, 3951
+       03DC 07B7 0F6F
+ 009A 002B 0057 00AF 015D	F	word 	43, 87,  175, 349, 698, 1397, 2794
+       02BA 0575 0AEA
+ 00A8 002E 005C 00B9 0172	Fs_Gf	word 	46, 92,  185, 370, 740, 1480, 2960
+       02E4 05C8 0B90
+ 00B6 0031 0061 00C4 0188	G	word 	49, 97,  196, 392, 784, 1568, 3136
+       0310 0620 0C40
+ 00C4 0034 0067 00D0 019F	Gs_Af	word 	52, 103, 208, 415, 830, 1661, 3322
+       033E 067D 0CFA
+ 00D2  0032 [			safe 	word 	50 dup("ø")
+        C3B8
+       ]
+
+
+ 0136  0064 [			raw		BYTE	100 dup(0)
+        00
+       ]
+ 019A  0064 [			filename	BYTE	100 dup(0)
+        00
+       ]
+ 01FE 00 00			buffer		BYTE	0, 0
+ 0200  0064 [			space		BYTE	100 dup(0)
+        00
+       ]
+ 0264 0000			filehandle	WORD	?
+ 0266 59 4F 2C 20 59 4F		fee		BYTE	"YO, YOUR FILE DON'T OPEN", 0
+       55 52 20 46 49 4C
+       45 20 44 4F 4E 27
+       54 20 4F 50 45 4E
+       00
+ 027F 0000			noteTime 	Word 	?
+
+
+ 0000				.code
+
+				;;;;;;;-----------------FILE STUFF BELOW ----------------------------
+				;;;;;;;-----------------FILE STUFF BELOW ----------------------------
+				;;;;;;;-----------------FILE STUFF BELOW ----------------------------
+
+
+				;MODIFIED ONLY 7e >  ASCIIZ > 32
+ 0000				PrintString Proc ; takes offset in DX and prints string
+ 0000  9C				pushf
+ 0001  50				push	ax
+ 0002  53				push	bx
+ 0003  52				push	dx
+
+ 0004  8B DA				mov	bx, dx
+ 0006  EB 09				jmp	print
+ 0008				dot:
+ 0008  B2 2E				mov	dl, "."
+ 000A  B4 02				mov	ah, 02h
+ 000C  CD 21				int	21h
+ 000E  43				inc	bx
+ 000F  EB 00				jmp	print
+ 0011				print:
+ 0011  8A 17				mov	dl, [bx]
+ 0013  80 FA 00				cmp	dl, 0h
+ 0016  74 11				je	brk
+
+ 0018  80 FA 7E				cmp	dl, 126
+ 001B  7F EB				jg	dot
+
+ 001D  80 FA 20				cmp	dl, 32
+ 0020  7C E6				jl	dot
+ 0022  B4 02				mov	ah, 02h
+ 0024  CD 21				int	21h
+ 0026  43				inc	bx
+ 0027  EB E8				jmp	print
+ 0029				brk:
+ 0029  5A				pop	dx
+ 002A  5B				pop	bx
+ 002B  58				pop	ax
+ 002C  9D				popf
+ 002D  CB				ret
+ 002E				PrintString endP
+
+ 002E				FileIn proc
+ 002E  50				push 	ax
+ 002F  53				push	bx
+ 0030  51				push	cx
+ 0031  52				push	dx
+ 0032  EB 0D				jmp 	go
+ 0034				exit:
+ 0034  2E: A1 03B3 R			mov	ax, OGMode
+ 0038  0E E8 00B8			call	SetVideoMode
+ 003C  B8 4C00				mov 	ax, 4C00h
+ 003F  CD 21				int 	21h
+
+ 0041				go:
+ 0041  8B 1E 0264 R			mov	bx, filehandle
+ 0045  B9 0001				mov	cx, 1h
+ 0048  BA 01FE R			mov	dx, offset buffer
+ 004B  66| B8 00000000			mov	eax, 0
+
+ 0051  B4 3F				mov	ah, 3Fh; read
+ 0053  CD 21				int	21h
+
+ 0055  83 F8 00				cmp 	ax, 0
+ 0058  74 DA				je 	exit
+
+ 005A				brk:
+
+ 005A  5A				pop	dx
+ 005B  59				pop	cx
+ 005C  5B				pop	bx
+ 005D  58				pop 	ax
+ 005E  CB				ret
+ 005F				FileIn endp
+
+ 005F				SegCopy proc
+				; SegCopy:takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+				; return in BX of file address (OFFSET filename)
+ 005F  9C				pushf
+ 0060  52				push	dx
+ 0061  57				push	di
+ 0062  56				push	si
+ 0063  51				push	cx
+
+ 0064  BE 0000				mov	si, 0
+ 0067  BB 0136 R			mov	bx, OFFSET raw
+
+ 006A  B5 00				mov	ch, 0
+ 006C  26: 8A 0D			mov	cl, ES:[di]
+
+ 006F  47				inc	di
+
+ 0070				L1:
+ 0070  83 F9 00				cmp	cx, 0
+ 0073  74 0A				je	brk
+ 0075  26: 8A 15			mov	dl, ES:[di]
+
+ 0078  88 10				mov	DS:[bx + si], dl
+
+ 007A  47				inc	di
+ 007B  46				inc	si
+ 007C  49				dec	cx
+ 007D  EB F1				jmp	L1
+
+ 007F				brk:
+ 007F  59				pop	cx
+ 0080  5E				pop	si
+ 0081  5F				pop	di
+ 0082  5A				pop	dx
+ 0083  9D				popf
+ 0084  CB				ret
+ 0085				SegCopy endP
+
+ 0085				openFile proc
+ 0085  52				push	dx
+
+ 0086  8B D3				mov	dx, bx
+ 0088  B0 00				mov	al, 0
+
+ 008A  B4 3D				mov	ah, 3dh ; ax takes file handle for reading
+ 008C  CD 21				int	21h
+ 008E  5A				pop	dx
+ 008F  CB				ret
+ 0090				openFile endp
+
+ 0090				closeFile proc
+ 0090  60				pusha
+
+ 0091  8B D8				mov	bx, ax
+ 0093  B4 3E				mov	ah, 3eh
+ 0095  CD 15				int	21
+
+ 0097  61				popa
+ 0098				closeFile endp
+
+ 0098				getFileName Proc
+				; return in bx location of file name in DS (DS:[bx])
+				; SegCopy: takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+ 0098  9C				pushf
+ 0099  50				push	ax
+ 009A  57				push	di
+ 009B  06				push	ES
+
+ 009C  B4 62				mov	ah, 62h
+ 009E  CD 21				int	21h     ;put PSP in bx
+
+ 00A0  8E C3				mov	ES, bx
+ 00A2  BF 0080				mov	di, 80h
+
+ 00A5  0E E8 FFB6			call	segCopy  ;file name @ in bx
+
+ 00A9  07				pop	ES
+ 00AA  5F				pop	di
+ 00AB  58				pop	ax
+ 00AC  9D				popf
+ 00AD  CB				ret
+ 00AE				getFileName endP
+
+ 00AE				cleanname proc
+ 00AE  60				pusha
+ 00AF  BB 0136 R			mov	bx, offset raw
+ 00B2  BD 019A R			mov	bp, offset filename
+ 00B5  BE 0000				mov	si, 0
+ 00B8				L1:
+ 00B8  8A 10				mov	dl, [bx + si]
+ 00BA  80 FA 20				cmp	dl, 20h
+ 00BD  74 19				je	BR
+ 00BF				L2:
+ 00BF  83 FE 64				cmp	si, 100
+ 00C2  74 1E				je	done
+ 00C4  3E: 88 56 00			mov	DS:[bp], dl
+ 00C8  45				inc	bp
+ 00C9  46				inc	si
+ 00CA  8A 10				mov	dl, [bx + si]
+ 00CC  80 FA 20				cmp	dl, 20h
+ 00CF  74 11				je	done
+ 00D1  80 FA 00				cmp	dl, 0
+ 00D4  74 0C				je	done
+ 00D6  EB E7				jmp	L2
+
+ 00D8				BR:
+ 00D8  46				inc	si
+ 00D9  8A 10				mov	dl, [bx + si]
+ 00DB  80 FA 20				cmp	dl, 20h
+ 00DE  74 F8				je	br
+ 00E0  75 DD				jne	L2
+ 00E2				done:
+ 00E2  61				popa
+ 00E3  BB 019A R			mov	bx, offset filename
+ 00E6  CB				ret
+ 00E7				cleanname endp
+
+				;;;;;;;-----------------FILE STUFF ABOVE ------------------------------
+				;;;;;;;-----------------FILE STUFF ABOVE ------------------------------
+				;;;;;;;-----------------FILE STUFF ABOVE ------------------------------
+
+				;; Returns:
+				;; 	AL - Video Mode
+				;; 	AH - Number of character columns
+				;; 	BH - Active Page
+ 00E7				GetVideoMode PROC
+ 00E7  51				push	cx
+ 00E8  50				push	ax
+
+ 00E9  B4 0F				mov	ah, 0fh
+ 00EB  CD 10				int	BIOS
+ 00ED  8A C8				mov	cl, al
+
+ 00EF  58				pop	ax
+ 00F0  8A C1				mov	al, cl
+ 00F2  59				pop	cx
+ 00F3  CB				ret
+ 00F4				GetVideoMode ENDP
+
+				;; AL - Video mode
+
+ 00F4				SetVideoMode PROC
+ 00F4  50				push	ax
+
+ 00F5  B4 00				mov	ah, 00
+ 00F7  CD 10				int	BIOS
+
+ 00F9  58				pop	ax
+ 00FA  CB				ret
+ 00FB				SetVideoMode ENDP
+
+				;; BH - Page number
+				;; CX - X
+				;; DX - Y
+				;;
+				;; Returns:
+				;;
+				;; AL - Color
+
+ 00FB				ReadPixel PROC
+ 00FB  50				push	ax
+
+ 00FC  B4 0D				mov	ah, 0dh
+ 00FE  CD 10				int	BIOS
+
+ 0100  58				pop	ax
+ 0101  CB				ret
+ 0102				ReadPixel ENDP
+
+				;; AL - Color
+				;; BH - Page
+				;; CX - X
+				;; DX - Y
+ 0102				WritePixel PROC
+ 0102  50				push	ax
+
+ 0103  B4 FC				mov	ah, 0fch
+ 0105  CD 10				int	BIOS
+
+ 0107  58				pop	ax
+ 0108  CB				ret
+ 0109				WritePixel ENDP
+
+				;; BL - Palette id
+
+ 0109				SetPalette PROC
+ 0109  50				push	ax
+ 010A  53				push	bx
+
+ 010B  B4 0B				mov	ah, 0bh
+ 010D  B7 01				mov	bh, 01h
+ 010F  CD 10				int	BIOS
+
+ 0111  5B				pop	bx
+ 0112  58				pop	ax
+ 0113  CB				ret
+ 0114				SetPalette ENDP
+
+
+				;; AL - Pallete Index
+				;; AH - Red
+				;; CX - Blue:Green
+
+ 0114				SetPalleteColor PROC
+ 0114  50				push	ax
+ 0115  52				push	dx
+
+ 0116  BA 03C8				mov	dx, 3c8h	; Video pallete port
+ 0119  EE				out	dx, al		; Write the color out
+
+ 011A  BA 03C9				mov	dx, 3c9h	; Color selection port
+
+ 011D  8A C4				mov	al, ah		; Red
+ 011F  EE				out	dx, al
+ 0120  8A C1				mov	al, cl		; Green
+ 0122  EE				out	dx, al
+ 0123  8A C5				mov	al, ch		; Blue
+ 0125  EE				out	dx, al
+
+ 0126  5A				pop	dx
+ 0127  58				pop	ax
+ 0128  CB				ret
+ 0129				SetPalleteColor ENDP
+
+				;; BX - Color Index
+				;; CX - X
+				;; DX - Y
+ 0129				DrawPixel PROC
+				;; Screen resolution is 320x200
+
+ 0129  50				push	ax
+ 012A  52				push	dx
+ 012B  57				push	di
+ 012C  06				push	es
+
+ 012D  B8 0140				mov	ax, 320
+ 0130  F7 E2				mul	dx		; AX = 320 * Y
+ 0132  03 C1				add	ax, cx		; AX = 320 * Y + X
+
+ 0134  8B F8				mov	di, ax		; Set di to the offset
+
+ 0136  68 A000				push	0A000h		; Set ES to the video segment
+ 0139  07				pop	es
+
+ 013A  26: 88 1D			mov	BYTE PTR es:[di], bl ; Set the pixel to the given color
+
+ 013D  07				pop	es
+ 013E  5F				pop	di
+ 013F  5A				pop	dx
+ 0140  58				pop	ax
+ 0141  CB				ret
+ 0142				DrawPixel ENDP
+
+				;--------------------------------- Delay ------------------------------------
+				; gets a number of mms from the stack and returns when that amount
+				; of time (in mms) has elapsed
+				; AH = 2Ch int 21h get system time -> CH = Hour, CL = min, DH = sec, DL = 1/10s
+				; check time fast and return
+
+ 0142				GetNow Proc
+ 0142  50				push	ax
+ 0143  B4 2C				mov	ah, 2Ch
+ 0145  CD 21				int	21h
+ 0147  58				pop	ax
+ 0148  CB				ret
+ 0149				GetNow Endp
+
+ 0149				TimeChange Proc
+ 0149  9C				pushf
+ 014A  0E E8 FFF4			call	GetNow
+ 014E  8A DA				mov	bl, dl
+ 0150				L1:
+ 0150  0E E8 FFEE			call	GetNow
+ 0154  38 D3				cmp	bl, dl
+ 0156  77 04				ja	L2
+ 0158  72 0B				jb	G1
+ 015A  EB F4				jmp	L1
+ 015C				L2:
+ 015C  80 C2 64				add	dl, 100
+ 015F  2A D3				sub	dl, bl
+ 0161  8A DA				mov	bl, dl
+ 0163  EB 04				jmp	done
+ 0165				G1:
+ 0165  2A D3				sub	dl, bl
+ 0167  8A DA				mov	bl, dl
+ 0169				done:
+ 0169  B7 00				mov	bh, 0
+ 016B  9D				popf
+ 016C  CB				ret
+ 016D				TimeChange Endp
+
+ 016D				Delay PROC
+ 016D  55				push	bp
+ 016E  8B EC				mov	bp, sp
+ 0170  9C				pushf
+ 0171  50				push	ax
+ 0172  53				push	bx
+ 0173  51				push	cx
+ 0174  52				push	dx
+ 0175  BA 0000				mov	dx, 0
+ 0178  BB 000A				mov	bx, 10
+ 017B  A1 027F R			mov	ax, noteTime ; get mms
+ 017E  F7 F3				div	bx
+							;AX has Cent-secs
+ 0180  BB 0000				mov	bx, 0
+ 0183  0E E8 FFBB			call	GetNow
+ 0187				stall:
+ 0187  0E E8 FFBE			Call	TimeChange
+ 018B  2B C3				sub	ax, bx
+ 018D  72 02				jc	done
+ 018F  EB F6				jmp	stall
+ 0191				done:
+ 0191  5A				pop	dx
+ 0192  59				pop	cx
+ 0193  5B				pop	bx
+ 0194  58				pop	ax
+ 0195  9D				popf
+ 0196  5D				pop	bp
+ 0197  CB				ret
+ 0198				Delay ENDP
+
+ = 00B6				READY_TIMER		= 0B6h
+ = 0042				TIMER_DATA_PORT		= 42h
+ = 0043				TIMER_CONTROL_PORT	= 43h
+ = 0061				SPEAKER_PORT		= 61h
+
+ 0281				.data
+ 0281 00			MUTED 	BYTE 	0
+ 0198				.code
+
+ 0198				SpeakerOn PROC
+ 0198  9C				pushf
+ 0199  50				push	ax
+
+ 019A  80 3E 0281 R 01			cmp	MUTED, 1
+ 019F  74 06				je	done
+
+ 01A1  E4 61				in	al, SPEAKER_PORT		; Read the speaker register
+ 01A3  0C 03				or	al, 03h				; Set the two low bits high
+ 01A5  E6 61				out	SPEAKER_PORT, al		; Write the speaker register
+
+ 01A7					done:
+ 01A7  58				pop	ax
+ 01A8  9D				popf
+ 01A9  CB				ret
+ 01AA				SpeakerOn ENDP
+
+ 01AA				SpeakerOff PROC
+
+ 01AA  9C				pushf
+ 01AB  50				push	ax
+
+ 01AC  E4 61				in	al, SPEAKER_PORT		; Read the speaker register
+ 01AE  24 FC				and	al, 0FCh			; Clear the two low bits high
+ 01B0  E6 61				out	SPEAKER_PORT, al		; Write the speaker register
+
+ 01B2  58				pop	ax
+ 01B3  9D				popf
+ 01B4  CB				ret
+ 01B5				SpeakerOff ENDP
+ 0282				.data
+ 0282 001234DC			FREQUENCY 	DWORD 	1193180d
+ 01B5				.code
+ 01B5				FreqToCount PROC
+ 01B5  9C				pushf
+ 01B6  50				push 	ax
+ 01B7  66| 51				push 	ecx
+ 01B9  66| B9 00000000			mov 	ecx, 0
+ 01BF  8B CA				mov 	cx, dx
+ 01C1  66| A1 0282 R			mov 	eax, FREQUENCY
+ 01C5  BA 0000				mov 	dx, 0
+ 01C8  66| F7 F1			div 	ecx
+ 01CB  66| BA 00000000			mov	edx, 0
+ 01D1  8B D0				mov 	dx, ax
+
+ 01D3  66| 59				pop 	ecx
+ 01D5  58				pop 	ax
+ 01D6  9D				popf
+ 01D7  CB				ret
+ 01D8				FreqToCount ENDP
+
+ 01D8				PlayFrequency PROC
+				;; Frequency is found in DX
+
+ 01D8  9C				pushf
+ 01D9  50				push	ax
+
+ 01DA  0E E8 FFD7			call	FreqToCount
+
+ 01DE  B0 B6				mov	al, READY_TIMER			; Get the timer ready
+ 01E0  E6 43				out	TIMER_CONTROL_PORT, al
+
+ 01E2  8A C2				mov	al, dl
+ 01E4  E6 42				out	TIMER_DATA_PORT, al		; Send the count low byte
+
+ 01E6  8A C6				mov	al, dh
+ 01E8  E6 42				out	TIMER_DATA_PORT, al		; Send the count high byte
+
+ 01EA  58				pop	ax
+ 01EB  9D				popf
+ 01EC  CB				ret
+ 01ED				PlayFrequency ENDP
+
+ 01ED				liner PROC
+ 01ED  9C				pushf
+ 01EE  50				push 	ax
+ 01EF  51				push 	cx
+ 01F0  52				push 	dx
+ 01F1  06				push 	es
+ 01F2				horiz:
+ 01F2  BF A000				mov 	di, 0a000h
+ 01F5  8E C7				mov 	es, di
+ 01F7  66| BF 00001B58			mov 	edi, 7000
+ 01FD  66| 83 C7 4B			add 	edi, 75
+ 0201  8A C3				mov 	al,bl
+ 0203  B9 00A0				mov 	cx, 160
+ 0206				hplot:
+ 0206  67& 26: 88 07			mov 	es:[edi],al
+ 020A  66| 47				inc 	edi
+ 020C  E2 F8				loop	hplot
+ 020E				horiz2:
+ 020E  66| BF 00007D00			mov 	edi, 32000
+ 0214  66| 83 C7 0F			add 	edi, 15
+ 0218  8A C3				mov 	al,bl
+ 021A  B9 00A0				mov 	cx, 160
+ 021D				hplot2:
+ 021D  67& 26: 88 07			mov 	es:[edi],al
+ 0221  66| 47				inc 	edi
+ 0223  E2 F8				loop	hplot2
+ 0225				vert:
+ 0225  66| BF 00003E80			mov 	edi, 16000
+ 022B  66| 81 C7 000000A0		add 	edi, 160
+ 0232  B9 0064				mov 	cx, 100
+ 0235				vplot:
+ 0235  67& 26: 88 07			mov 	es:[edi],al
+ 0239  66| 83 C7 5A			add 	edi, 90
+ 023D  E2 F6				loop	vplot
+
+ 023F				vert2:
+ 023F  66| BF 00001770			mov 	edi, 6000
+ 0245  66| 83 C7 14			add 	edi, 20
+ 0249  B9 0064				mov 	cx, 100
+ 024C				vplot2:
+ 024C  67& 26: 88 07			mov 	es:[edi],al
+ 0250  66| 81 C7 00000140		add 	edi, 320
+ 0257  E2 F3				loop	vplot2
+
+ 0259				done:
+ 0259  43				inc bx
+ 025A  07				pop 	es
+ 025B  5A				pop 	dx
+ 025C  59				pop 	cx
+ 025D  58				pop 	ax
+ 025E  9D				popf
+ 025F  CB				ret
+ 0260				liner endP
+
+ 0260				GetNote PROC
+ 0260  51				push 	cx
+ 0261  52				push 	dx
+
+ 0262  A0 01FE R			mov 	al, BUFFER
+ 0265  2C 61				sub 	al, "a"
+
+ 0267  BA 0000				mov 	dx, 0
+ 026A  8B C8				mov 	cx, ax
+ 026C  B8 0002				mov 	ax, 2
+ 026F  F7 E1				mul 	cx
+
+ 0271  5A				pop 	dx
+ 0272  59				pop 	cx
+ 0273  CB				ret
+ 0274				GetNote ENDP
+
+ 0286				.DATA
+ 0286 59 6F 75 72 20 73		scoreErr 	byte 	"Your score isn't in the right format.", 0, 0dh, 0ah
+       63 6F 72 65 20 69
+       73 6E 27 74 20 69
+       6E 20 74 68 65 20
+       72 69 67 68 74 20
+       66 6F 72 6D 61 74
+       2E 00 0D 0A
+
+ 0274				.code
+
+ 0274				GetAccidental PROC
+ 0274  51				push 	cx
+ 0275  52				push 	dx
+ 0276  B9 0000				mov 	cx, 0
+
+ 0279  0E E8 FDB1			call 	FileIn
+ 027D  8A 0E 01FE R			mov 	cl, BUFFER
+ 0281  83 F9 23				cmp	cx, "#"
+ 0284  74 0C				je 	sharp
+
+ 0286  83 F9 62				cmp	cx, "b"
+ 0289  74 0A				je 	fl
+
+ 028B  83 F9 20				cmp 	cx, " "
+ 028E  74 1C				je 	done
+ 0290  75 06				jne 	err
+
+ 0292				sharp:
+ 0292  40				inc 	ax
+ 0293  EB 17				jmp 	done
+ 0295				fl:
+ 0295  48				dec 	ax
+ 0296  EB 14				jmp 	done
+ 0298				err:
+ 0298  2E: A1 03B3 R			mov	ax, OGMode
+ 029C  0E E8 FE54			call	SetVideoMode
+ 02A0  BA 0286 R			mov 	dx, offset scoreErr
+ 02A3  0E E8 FD59			call 	printString
+ 02A7  B8 4C00				mov 	ax, 4C00h
+ 02AA  CD 21				int 	21h
+ 02AC				done:
+
+ 02AC  5A				pop 	dx
+ 02AD  59				pop 	cx
+ 02AE  CB				ret
+ 02AF				GetAccidental ENDP
+
+ 02AF				GetOctave PROC
+
+ 02AF  0E E8 FD7B			call 	FileIn
+					; call 	testing
+ 02B3  BB 0000				mov 	bx, 0
+
+ 02B6  8A 1E 01FE R			mov 	bl, BUFFER
+
+ 02BA  83 EB 30				sub 	bx, "0"
+
+ 02BD  83 EB 01				sub 	bx, 1
+
+ 02C0  03 C3				add 	ax, bx
+ 02C2  03 C3				add 	ax, bx
+
+ 02C4  CB				ret
+ 02C5				GetOctave ENDP
+
+ 02C5				convert PROC
+ 02C5  50				push 	ax
+ 02C6  51				push 	cx
+ 02C7  52				push 	dx
+
+
+ 02C8  B8 0000				mov 	ax, 0
+ 02CB  EB 00				jmp 	go
+
+ 02CD				go:
+ 02CD  0E E8 FF8F			call 	GetNote
+					;handle sharps and flats
+ 02D1  0E E8 FF9F			call 	GetAccidental
+
+ 02D5  BA 0000				mov 	dx, 0
+ 02D8  8B C8				mov 	cx, ax
+ 02DA  B8 000E				mov 	ax, 14
+ 02DD  F7 E1				mul 	cx
+
+					;handle sharps and flats
+
+ 02DF  0E E8 FFCC			call 	GetOctave
+
+ 02E3  BB 000E R			mov 	bx, offset notes
+ 02E6  03 D8				add 	bx, ax
+
+ 02E8  58				pop 	ax
+ 02E9  59				pop 	cx
+ 02EA  5A				pop 	dx
+ 02EB  CB				ret
+ 02EC				convert ENDP
+
+ 02EC				getDur PROC
+ 02EC  51				push 	cx
+ 02ED  B9 0000				mov 	cx, 0
+
+ 02F0  0E E8 FD3A			call 	FileIn
+					; call 	testing
+ 02F4  8A 0E 01FE R			mov 	cl, BUFFER
+ 02F8  83 F9 51				cmp	cx, "Q"
+ 02FB  74 38				je 	qu
+
+ 02FD  83 F9 45				cmp	cx, "E"
+ 0300  74 2B				je 	eight
+
+ 0302  83 F9 48				cmp 	cx, "H"
+ 0305  74 3E				je 	half
+
+ 0307  83 F9 57				cmp 	cx, "W"
+ 030A  74 41				je 	whole
+
+ 030C  83 F9 44				cmp 	cx, "D"
+ 030F  74 2C				je 	dotQ
+
+ 0311  83 F9 54				cmp 	cx, "T"
+ 0314  74 0F				je 	trip
+
+ 0316  83 F9 53				cmp 	cx, "S"
+ 0319  74 02				je 	sixt
+ 031B  75 38				jne 	err
+
+ 031D				sixt:
+ 031D  C7 06 027F R 00FA		mov  	noteTime, 250
+ 0323  EB 44				jmp 	done
+
+ 0325				trip:
+ 0325  C7 06 027F R 014D		mov  	noteTime, 333
+ 032B  EB 3C				jmp 	done
+
+ 032D				eight:
+ 032D  C7 06 027F R 01F4		mov  	noteTime, 500
+ 0333  EB 34				jmp 	done
+ 0335				qu:
+ 0335  C7 06 027F R 03E8		mov  	noteTime, 1000
+ 033B  EB 2C				jmp 	done
+
+ 033D				dotQ:
+ 033D  C7 06 027F R 05DC		mov  	noteTime, 1500
+ 0343  EB 24				jmp 	done
+
+ 0345				half:
+ 0345  C7 06 027F R 07D0		mov  	noteTime, 2000
+ 034B  EB 1C				jmp 	done
+ 034D				whole:
+ 034D  C7 06 027F R 0FA0		mov  	noteTime, 4000
+ 0353  EB 14				jmp 	done
+
+ 0355				err:
+ 0355  2E: A1 03B3 R			mov	ax, OGMode
+ 0359  0E E8 FD97			call	SetVideoMode
+ 035D  BA 0286 R			mov 	dx, offset scoreErr
+ 0360  0E E8 FC9C			call 	printString
+ 0364  B8 4C00				mov 	ax, 4C00h
+ 0367  CD 21				int 	21h
+ 0369				done:
+
+ 0369  59				pop 	cx
+ 036A  CB				ret
+
+ 036B  CB				ret
+ 036C				getDur ENDP
+
+
+ 036C				PlayNote Proc
+ 036C  9C			 	pushf
+ 036D  50				push 	ax
+ 036E  52				push	dx
+ 036F  53				push 	bx
+ 0370  57				push 	di
+ 0371  EB 13				jmp 	go
+ 0373				rest:
+ 0373  58				pop 	ax
+ 0374  0E E8 FEFC			call 	GetAccidental
+ 0378  0E E8 FF33			call 	GetOctave
+ 037C  0E E8 FF6C			call 	getDur
+ 0380  0E E8 FDE9			call	Delay
+ 0384  EB 27				jmp 	done
+
+ 0386				go:
+
+ 0386  50				push	ax
+ 0387  0E E8 FCA3			call 	FileIn
+					; call 	testing
+ 038B  A0 01FE R			mov 	al, BUFFER
+ 038E  3C 30				cmp 	al, "0"
+ 0390  74 E1				je 	rest
+ 0392  58				pop 	ax
+
+ 0393  0E E8 FF2E			call 	convert
+
+ 0397  8B 17				mov 	dx, [bx]
+ 0399  0E E8 FE3B			call 	PlayFrequency
+ 039D  0E E8 FF4B			call 	getDur
+ 03A1  0E E8 FDF3			call 	SpeakerOn
+ 03A5  0E E8 FDC4			call	Delay
+ 03A9  0E E8 FDFD			call 	SpeakerOff
+ 03AD				done:
+ 03AD  5F				pop 	di
+ 03AE  5B				pop 	bx
+ 03AF  5A				pop 	dx
+ 03B0  58				pop 	ax
+ 03B1  9D				popf
+ 03B2  CB				ret
+ 03B3				PlayNote Endp
+
+ 03B3 0000			OGMode 	word 	?
+
+ 03B5				main PROC
+ 03B5  B8 ---- R			mov 	ax, @data
+ 03B8  8E D8				mov 	ds, ax
+ 03BA  EB 09				jmp	strt
+ 03BC				Fe:
+ 03BC  BA 0266 R			mov	dx, offset fee
+ 03BF  0E E8 FC3D			call	PrintString
+ 03C3  EB 5D				jmp	ExitDOS
+
+ 03C5				strt:
+ 03C5  0E E8 FCCF			call	getFileName 	;file @ in bx
+ 03C9  0E E8 FCE1			call	cleanname
+
+ 03CD  9C				pushf
+ 03CE  0E E8 FCB3			call	openFile
+ 03D2  72 E8				jc	Fe
+
+ 03D4  9D				popf
+					;ax has file handle
+
+ 03D5  A3 0264 R			mov	filehandle, ax
+					;FILE READY TO BE READ
+
+ 03D8  0E E8 FD0B			call	GetVideoMode
+ 03DC  2E: A3 03B3 R			mov	OGMode, ax
+ 03E0  B0 13				mov	al, 13h		; 320x200 x 256 colors
+ 03E2  0E E8 FD0E			call	SetVideoMode
+
+
+ 03E6  B0 00				mov	al, 0
+ 03E8  B4 FF				mov	ah, 0ffh		; AH: Red
+ 03EA  B9 FFDD				mov	cx, 0ffddh	; CH: Blue, CL: Green
+ 03ED  0E E8 FD23			call	SetPalleteColor	; Set background (pallete 0) to blue
+
+ 03F1  B0 01				mov	al, 1		; Set pallete color 1
+ 03F3  B4 FF				mov	ah, 0ffh	; Red
+ 03F5  B9 0000				mov	cx, 00000h	; CH: Blue, CL: Green
+ 03F8  0E E8 FD18			call	SetPalleteColor
+
+ 03FC  BB 0001				mov	bx, 1		; Pallete
+ 03FF  B9 00A0				mov	cx, 160		; X
+ 0402  BA 0064				mov	dx, 100		; Y
+ 0405  BF 002C				mov 	di, 44
+ 0408  57				push 	di
+ 0409  EB 0C			 	jmp	loopcond
+ 040B				top:
+ 040B  0E E8 FD1A			call	DrawPixel	;; BX - Color Index
+								;; CX - X
+								;; DX - Y
+ 040F  0E E8 FDDA			call 	liner	  	; takes CX and DX
+ 0413  0E E8 FF55			call 	PlayNote
+ 0417				loopcond:
+ 0417  EB F2				jmp	top
+
+ 0419  5F				pop 	di
+ 041A  2E: A1 03B3 R			mov	ax, OGMode
+ 041E  0E E8 FCD2			call	SetVideoMode
+
+ 0422				ExitDOS:
+ 0422  0E E8 FC6A			call	closeFile
+
+ 0426  B8 4C00				mov	ax, 4C00h	; Set up DOS function 4C: exit program
+ 0429  CD 21				int	21h
+ 042B				main ENDP
+
+				END main
+Microsoft (R) Macro Assembler Version 6.11		    11/12/18 12:42:43
+DosTunes						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 02AE	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0100	  Para	  Stack	  'STACK'	 
+DOSTUNES_TEXT  . . . . . . . . .	16 Bit	 042B	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+Delay  . . . . . . . . . . . . .	P Far	 016D	  DOSTUNES_TEXT	Length= 002B Public
+  stall  . . . . . . . . . . . .	L Near	 0187	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 0191	  DOSTUNES_TEXT	
+DrawPixel  . . . . . . . . . . .	P Far	 0129	  DOSTUNES_TEXT	Length= 0019 Public
+FileIn . . . . . . . . . . . . .	P Far	 002E	  DOSTUNES_TEXT	Length= 0031 Public
+  exit . . . . . . . . . . . . .	L Near	 0034	  DOSTUNES_TEXT	
+  go . . . . . . . . . . . . . .	L Near	 0041	  DOSTUNES_TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 005A	  DOSTUNES_TEXT	
+FreqToCount  . . . . . . . . . .	P Far	 01B5	  DOSTUNES_TEXT	Length= 0023 Public
+GetAccidental  . . . . . . . . .	P Far	 0274	  DOSTUNES_TEXT	Length= 003B Public
+  sharp  . . . . . . . . . . . .	L Near	 0292	  DOSTUNES_TEXT	
+  fl . . . . . . . . . . . . . .	L Near	 0295	  DOSTUNES_TEXT	
+  err  . . . . . . . . . . . . .	L Near	 0298	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 02AC	  DOSTUNES_TEXT	
+GetNote  . . . . . . . . . . . .	P Far	 0260	  DOSTUNES_TEXT	Length= 0014 Public
+GetNow . . . . . . . . . . . . .	P Far	 0142	  DOSTUNES_TEXT	Length= 0007 Public
+GetOctave  . . . . . . . . . . .	P Far	 02AF	  DOSTUNES_TEXT	Length= 0016 Public
+GetVideoMode . . . . . . . . . .	P Far	 00E7	  DOSTUNES_TEXT	Length= 000D Public
+PlayFrequency  . . . . . . . . .	P Far	 01D8	  DOSTUNES_TEXT	Length= 0015 Public
+PlayNote . . . . . . . . . . . .	P Far	 036C	  DOSTUNES_TEXT	Length= 0047 Public
+  rest . . . . . . . . . . . . .	L Near	 0373	  DOSTUNES_TEXT	
+  go . . . . . . . . . . . . . .	L Near	 0386	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 03AD	  DOSTUNES_TEXT	
+PrintString  . . . . . . . . . .	P Far	 0000	  DOSTUNES_TEXT	Length= 002E Public
+  dot  . . . . . . . . . . . . .	L Near	 0008	  DOSTUNES_TEXT	
+  print  . . . . . . . . . . . .	L Near	 0011	  DOSTUNES_TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0029	  DOSTUNES_TEXT	
+ReadPixel  . . . . . . . . . . .	P Far	 00FB	  DOSTUNES_TEXT	Length= 0007 Public
+SegCopy  . . . . . . . . . . . .	P Far	 005F	  DOSTUNES_TEXT	Length= 0026 Public
+  L1 . . . . . . . . . . . . . .	L Near	 0070	  DOSTUNES_TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 007F	  DOSTUNES_TEXT	
+SetPalette . . . . . . . . . . .	P Far	 0109	  DOSTUNES_TEXT	Length= 000B Public
+SetPalleteColor  . . . . . . . .	P Far	 0114	  DOSTUNES_TEXT	Length= 0015 Public
+SetVideoMode . . . . . . . . . .	P Far	 00F4	  DOSTUNES_TEXT	Length= 0007 Public
+SpeakerOff . . . . . . . . . . .	P Far	 01AA	  DOSTUNES_TEXT	Length= 000B Public
+SpeakerOn  . . . . . . . . . . .	P Far	 0198	  DOSTUNES_TEXT	Length= 0012 Public
+  done . . . . . . . . . . . . .	L Near	 01A7	  DOSTUNES_TEXT	
+TimeChange . . . . . . . . . . .	P Far	 0149	  DOSTUNES_TEXT	Length= 0024 Public
+  L1 . . . . . . . . . . . . . .	L Near	 0150	  DOSTUNES_TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 015C	  DOSTUNES_TEXT	
+  G1 . . . . . . . . . . . . . .	L Near	 0165	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 0169	  DOSTUNES_TEXT	
+WritePixel . . . . . . . . . . .	P Far	 0102	  DOSTUNES_TEXT	Length= 0007 Public
+cleanname  . . . . . . . . . . .	P Far	 00AE	  DOSTUNES_TEXT	Length= 0039 Public
+  L1 . . . . . . . . . . . . . .	L Near	 00B8	  DOSTUNES_TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 00BF	  DOSTUNES_TEXT	
+  BR . . . . . . . . . . . . . .	L Near	 00D8	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 00E2	  DOSTUNES_TEXT	
+closeFile  . . . . . . . . . . .	P Far	 0090	  DOSTUNES_TEXT	Length= 0008 Public
+convert  . . . . . . . . . . . .	P Far	 02C5	  DOSTUNES_TEXT	Length= 0027 Public
+  go . . . . . . . . . . . . . .	L Near	 02CD	  DOSTUNES_TEXT	
+getDur . . . . . . . . . . . . .	P Far	 02EC	  DOSTUNES_TEXT	Length= 0120 Public
+  sixt . . . . . . . . . . . . .	L Near	 031D	  DOSTUNES_TEXT	
+  trip . . . . . . . . . . . . .	L Near	 0325	  DOSTUNES_TEXT	
+  eight  . . . . . . . . . . . .	L Near	 032D	  DOSTUNES_TEXT	
+  qu . . . . . . . . . . . . . .	L Near	 0335	  DOSTUNES_TEXT	
+  dotQ . . . . . . . . . . . . .	L Near	 033D	  DOSTUNES_TEXT	
+  half . . . . . . . . . . . . .	L Near	 0345	  DOSTUNES_TEXT	
+  whole  . . . . . . . . . . . .	L Near	 034D	  DOSTUNES_TEXT	
+  err  . . . . . . . . . . . . .	L Near	 0355	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 0369	  DOSTUNES_TEXT	
+getFileName  . . . . . . . . . .	P Far	 0098	  DOSTUNES_TEXT	Length= 0016 Public
+liner  . . . . . . . . . . . . .	P Far	 01ED	  DOSTUNES_TEXT	Length= 0073 Public
+  horiz  . . . . . . . . . . . .	L Near	 01F2	  DOSTUNES_TEXT	
+  hplot  . . . . . . . . . . . .	L Near	 0206	  DOSTUNES_TEXT	
+  horiz2 . . . . . . . . . . . .	L Near	 020E	  DOSTUNES_TEXT	
+  hplot2 . . . . . . . . . . . .	L Near	 021D	  DOSTUNES_TEXT	
+  vert . . . . . . . . . . . . .	L Near	 0225	  DOSTUNES_TEXT	
+  vplot  . . . . . . . . . . . .	L Near	 0235	  DOSTUNES_TEXT	
+  vert2  . . . . . . . . . . . .	L Near	 023F	  DOSTUNES_TEXT	
+  vplot2 . . . . . . . . . . . .	L Near	 024C	  DOSTUNES_TEXT	
+  done . . . . . . . . . . . . .	L Near	 0259	  DOSTUNES_TEXT	
+main . . . . . . . . . . . . . .	P Far	 03B5	  DOSTUNES_TEXT	Length= 0076 Public
+  Fe . . . . . . . . . . . . . .	L Near	 03BC	  DOSTUNES_TEXT	
+  strt . . . . . . . . . . . . .	L Near	 03C5	  DOSTUNES_TEXT	
+  top  . . . . . . . . . . . . .	L Near	 040B	  DOSTUNES_TEXT	
+  loopcond . . . . . . . . . . .	L Near	 0417	  DOSTUNES_TEXT	
+  ExitDOS  . . . . . . . . . . .	L Near	 0422	  DOSTUNES_TEXT	
+openFile . . . . . . . . . . . .	P Far	 0085	  DOSTUNES_TEXT	Length= 000B Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0001h	 
+@DataSize  . . . . . . . . . . .	Number	 0002h	 
+@Interface . . . . . . . . . . .	Number	 0000h	 
+@Model . . . . . . . . . . . . .	Number	 0006h	 
+@code  . . . . . . . . . . . . .	Text   	 DOSTUNES_TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+Af . . . . . . . . . . . . . . .	Word	 0000	  _DATA	
+As_Bf  . . . . . . . . . . . . .	Word	 001C	  _DATA	
+A  . . . . . . . . . . . . . . .	Word	 000E	  _DATA	
+BIOS . . . . . . . . . . . . . .	Number	 0010h	 
+B  . . . . . . . . . . . . . . .	Word	 002A	  _DATA	
+C1 . . . . . . . . . . . . . . .	Word	 0046	  _DATA	
+Cs_Df  . . . . . . . . . . . . .	Word	 0054	  _DATA	
+DOSEXIT  . . . . . . . . . . . .	Number	 4C00h	 
+DOS  . . . . . . . . . . . . . .	Number	 0021h	 
+Ds_Ef  . . . . . . . . . . . . .	Word	 0070	  _DATA	
+D  . . . . . . . . . . . . . . .	Word	 0062	  _DATA	
+E  . . . . . . . . . . . . . . .	Word	 007E	  _DATA	
+FREQUENCY  . . . . . . . . . . .	DWord	 0282	  _DATA	
+Fs_Gf  . . . . . . . . . . . . .	Word	 00A8	  _DATA	
+F  . . . . . . . . . . . . . . .	Word	 009A	  _DATA	
+Gs_Af  . . . . . . . . . . . . .	Word	 00C4	  _DATA	
+G  . . . . . . . . . . . . . . .	Word	 00B6	  _DATA	
+MUTED  . . . . . . . . . . . . .	Byte	 0281	  _DATA	
+OGMode . . . . . . . . . . . . .	Word	 03B3	  DOSTUNES_TEXT	
+READY_TIMER  . . . . . . . . . .	Number	 00B6h	 
+SPEAKER_PORT . . . . . . . . . .	Number	 0061h	 
+TIMER_CONTROL_PORT . . . . . . .	Number	 0043h	 
+TIMER_DATA_PORT  . . . . . . . .	Number	 0042h	 
+buffer . . . . . . . . . . . . .	Byte	 01FE	  _DATA	
+fee  . . . . . . . . . . . . . .	Byte	 0266	  _DATA	
+filehandle . . . . . . . . . . .	Word	 0264	  _DATA	
+filename . . . . . . . . . . . .	Byte	 019A	  _DATA	
+none2  . . . . . . . . . . . . .	Word	 008C	  _DATA	
+none . . . . . . . . . . . . . .	Word	 0038	  _DATA	
+noteTime . . . . . . . . . . . .	Word	 027F	  _DATA	
+notes  . . . . . . . . . . . . .	Word	 000E	  _DATA	
+raw  . . . . . . . . . . . . . .	Byte	 0136	  _DATA	
+safe . . . . . . . . . . . . . .	Word	 00D2	  _DATA	
+scoreErr . . . . . . . . . . . .	Byte	 0286	  _DATA	
+space  . . . . . . . . . . . . .	Byte	 0200	  _DATA	
+
+	   0 Warnings
+	   0 Errors

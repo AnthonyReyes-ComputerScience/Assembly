@@ -1,0 +1,905 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/02/18 16:08:56
+Keyping							     Page 1 - 1
+
+
+				Title Keyping
+
+				;Anthony Reyes
+				;keyping.asm
+				;
+
+				.model tiny
+				.386
+ 0000				.code
+
+					org	100h
+ 0100				entryPoint:
+ 0100  E9 0896				jmp 	setup
+
+
+ = 4C00				TERMINATE	= 4C00h		; DOS code for terminating a program
+ = 0021				DOS		= 21h		; DOS interrupt code
+
+ = 0040				DOSDATA = 40h
+
+ = 0017				KEYFLAG = 17h
+ = 0004				CTRL = 4
+ = 0008				ALT = 8
+ = 0001				RIGHTSHIFT = 1
+ = 0002				LEFTSHIFT = 2
+
+ 0103  00C8 [			MyStack		WORD	200 dup(0)
+        0000
+       ]
+ 0293				MySP		LABEL	WORD
+ 0293 00			myspace		BYTE	0
+ 0294 0000			oldSP		WORD 	?
+ 0296  0032 [			empty		byte	50 dup(0)
+        00
+       ]
+ 02C8 0000			OldDS		WORD	?
+ 02CA 0000			OldSS		WORD	?
+
+ 02CC  00C8 [			MyStack1		WORD	200 dup(0)
+        0000
+       ]
+ 045C				MySP1		LABEL	WORD
+ 045C 00			myspace1		BYTE	0
+ 045D 0000			oldSP1		WORD 	?
+ 045F  0032 [			empty1		byte	50 dup(0)
+        00
+       ]
+ 0491 0000			OldDS1		WORD	?
+ 0493 0000			OldSS1		WORD	?
+
+ 0495  00C8 [			MyStack2		WORD	200 dup(0)
+        0000
+       ]
+ 0625				MySP2		LABEL	WORD
+ 0625 00			myspace2		BYTE	0
+ 0626 0000			oldSP2		WORD 	?
+ 0628  0032 [			empty2		byte	50 dup(0)
+        00
+       ]
+ 065A 0000			OldDS2		WORD	?
+ 065C 0000			OldSS2		WORD	?
+
+ 065E 00			ControlPressed	BYTE 0
+
+ 065F 30 31 32 33 34 35		harry	BYTE "0123456789ABCDEF", 0
+       36 37 38 39 41 42
+       43 44 45 46 00
+
+				;---------------------Keyboard Handler-----------------------------
+
+ 0670				old_key 	LABEL 	DWORD
+ 0670 0000			old_keySeg 	WORD  	0
+ 0672 0000			old_keyOffset 	WORD  	0
+
+ = 0009				KeyboardIVT = 9h
+
+				;int 10h
+					;AH = 09h
+					;AL = character to display
+					;BH = page number (00h to number of pages - 1) (see #00010)
+					;background color in 256-color graphics modes (ET4000)
+					;BL = attribute (text mode) or color (graphics mode)
+					;if bit 7 set in <256-color graphics mode, character is XOR'ed
+					;onto screen
+					;CX = number of times to write character
+
+ 0674				KeyboardHandler Proc
+ 0674  8C D0				mov	ax, SS		;SS
+ 0676  A3 0493 R			mov	OldSS1, ax	;SS
+
+ 0679  8C D8				mov	ax, DS		;DS
+ 067B  A3 0491 R			mov	OldDS1, ax	;DS
+
+ 067E  8C C8				mov	ax, CS		;CS
+ 0680  8E D0				mov	SS, ax
+ 0682  8E D8				mov	DS, ax
+
+ 0684  8B C4				mov	ax, sp		;SP
+ 0686  A3 045D R			mov	oldsp1, ax
+
+ 0689  B8 045C R			mov	ax, OFFSET cs:MySP1
+ 068C  8B E0				mov	sp, ax
+					;
+ 068E  9C				pushf
+ 068F  50				push	ax
+ 0690  06				push	es
+
+					;; Load the keyboard status flag
+
+ 0691  B8 0040				mov	ax, DOSDATA
+ 0694  8E C0				mov	es, ax
+
+					;; clear the shift right flag
+ 0696  B4 12				mov 	ah, 12h
+ 0698  CD 16				int 	16h		;ax has keyflags
+ 069A  FA				cli
+ 069B  A8 04				test	al, CTRL
+ 069D  74 0E				jz	shift
+ 069F  A8 08				test	al, alt
+ 06A1  74 0A				jz	shift
+ 06A3  E8 02A6				call 	WaitOnControl
+ 06A6  FB				sti
+ 06A7  E8 018D				call 	RestoreText
+ 06AA  E8 0288				call 	RestoreCursor
+
+ 06AD				shift:
+ 06AD  A8 01				test	al, RIGHTSHIFT
+ 06AF  74 26				jz	done
+ 06B1				shift2:
+ 06B1  A8 02				test 	al, LEFTSHIFT
+ 06B3  74 22				jz 	done
+ 06B5  FB				sti
+ 06B6  80 3E 074F R 00			cmp	clockon, 0
+ 06BB  75 0A				jne 	clockoff
+ 06BD  E8 023F				call 	getCursor
+ 06C0  C6 06 074F R 01			mov	clockon, 1
+ 06C5  EB 10				jmp 	done
+ 06C7				clockoff:
+ 06C7  C6 06 074F R 00			mov	clockon, 0
+ 06CC  C6 06 0750 R 01			mov 	textsaved, 1
+ 06D1  E8 0163				call 	RestoreText
+ 06D4  E8 025E				call 	RestoreCursor
+ 06D7				done:
+ 06D7  FB				sti
+ 06D8  07				pop	es
+ 06D9  58				pop	ax
+ 06DA  9D				popf
+
+ 06DB  A1 0493 R			mov	ax, OldSS1	;SS
+ 06DE  8E D0				mov	SS, ax		;SS
+
+ 06E0  A1 0491 R			mov	ax, OldDS1	;DS
+ 06E3  8E D8				mov	DS, ax		;DS
+
+ 06E5  A1 045D R			mov	ax, oldsp1
+ 06E8  8B E0				mov	sp, ax		;SP
+
+ 06EA  2E: FF 2E 0670 R			jmp	DWORD PTR cs:old_key
+ 06EF				KeyboardHandler endp
+
+
+ 06EF				RestoreKBH Proc  	; Install Keyboard Handler
+ 06EF  9C				pushf
+ 06F0  50				push	ax
+ 06F1  53				push	bx
+ 06F2  51				push	cx
+ 06F3  06				push	ES
+
+ 06F4  B8 0000				mov	ax, 0
+ 06F7  8E C0				mov	es, ax
+ 06F9  BB 0024				mov	bx, KeyboardIVT * 4
+
+ 06FC  A1 0670 R			mov	ax, old_keySeg
+ 06FF  8B 0E 0672 R			mov	cx, old_keyOffset
+
+ 0703  26: 89 07			mov	es:[bx], ax
+ 0706  26: 89 4F 02			mov	es:[bx+2], cx
+
+ 070A  07				pop	ES
+ 070B  59				pop	cx
+ 070C  5B				pop	bx
+ 070D  58				pop	ax
+ 070E  9D				popf
+ 070F  C3				ret
+ 0710				RestoreKBH endp
+
+
+ 0710				InstallKBH Proc  ; Install Keyboard Handler
+ 0710  9C				pushf
+ 0711  50				push	ax
+ 0712  53				push	bx
+ 0713  06				push	ES
+
+ 0714  B8 0000				mov	ax, 0
+ 0717  8E C0				mov	es, ax
+ 0719  BB 0024				mov	bx, KeyboardIVT * 4
+
+ 071C  26: C7 07 0674 R			mov	es:[bx], KeyboardHandler
+ 0721  26: 8C 4F 02			mov	es:[bx+2], cs
+
+ 0725  07				pop	ES
+ 0726  5B				pop	bx
+ 0727  58				pop	ax
+ 0728  9D				popf
+ 0729  C3				ret
+ 072A				InstallKBH endp
+
+ 072A				SaveKBH Proc  ; Install Keyboard Handler
+ 072A  9C				pushf
+ 072B  50				push	ax
+ 072C  53				push	bx
+ 072D  51				push	cx
+ 072E  06				push	ES
+
+ 072F  B8 0000				mov	ax, 0
+ 0732  8E C0				mov	es, ax
+ 0734  BB 0024				mov	bx, KeyboardIVT * 4
+
+ 0737  26: 8B 07			mov	ax, es:[bx]
+ 073A  26: 8B 4F 02			mov	cx, es:[bx+2]
+
+ 073E  A3 0670 R			mov	old_keySeg, ax
+ 0741  89 0E 0672 R			mov	old_keyOffset, cx
+
+ 0745  07				pop	ES
+ 0746  59				pop	cx
+ 0747  5B				pop	bx
+ 0748  58				pop	ax
+ 0749  9D				popf
+ 074A  C3				ret
+ 074B				SaveKBH endp
+
+				;------------------------------------------------------------------
+
+				;---------------------Clock Handler-----------------------------
+
+ 074B				old_clock 	LABEL 	DWORD
+ 074B 0000			old_clockOffset 	WORD  	0
+ 074D 0000			old_clockSeg 		WORD  	0
+
+ 074F 00			clockon		byte 	0
+ 0750 00			textsaved 	byte	0
+
+ = 0008				ClockIVT = 8h
+
+ 0751				ClockHandler Proc
+ 0751  8C D0				mov	ax, SS		;SS
+ 0753  A3 065C R			mov	OldSS2, ax	;SS
+
+ 0756  8C D8				mov	ax, DS		;DS
+ 0758  A3 065A R			mov	OldDS2, ax	;DS
+
+ 075B  8C C8				mov	ax, CS		;CS
+ 075D  8E D0				mov	SS, ax
+ 075F  8E D8				mov	DS, ax
+
+ 0761  8B C4				mov	ax, sp		;SP
+ 0763  A3 0626 R			mov	oldsp2, ax
+
+ 0766  B8 0625 R			mov	ax, OFFSET cs:MySP2
+ 0769  8B E0				mov	sp, ax
+
+ 076B  80 3E 074F R 01			cmp 	clockon, 1
+ 0770  75 03				jne 	handle
+ 0772  E8 003A				call 	clock ;Replacing str in KBH
+ 0775				handle:
+
+
+
+ 0775  A1 065C R			mov	ax, OldSS2	;SS
+ 0778  8E D0				mov	SS, ax		;SS
+
+ 077A  A1 065A R			mov	ax, OldDS2	;DS
+ 077D  8E D8				mov	DS, ax		;DS
+
+ 077F  A1 0626 R			mov	ax, oldsp2
+ 0782  8B E0				mov	sp, ax		;SP
+
+ 0784  2E: FF 2E 074B R			jmp	DWORD PTR cs:old_clock
+ 0789				ClockHandler endp
+
+
+ 0789				RestoreCH Proc  ; Install Keyboard Handler
+ 0789  9C				pushf
+ 078A  50				push	ax
+ 078B  53				push	bx
+ 078C  51				push	cx
+ 078D  06				push	ES
+
+ 078E  B8 0000				mov	ax, 0
+ 0791  8E C0				mov	es, ax
+ 0793  BB 0020				mov	bx, ClockIVT * 4
+
+ 0796  A1 074B R			mov	ax, old_clockOffset
+ 0799  8B 0E 074D R			mov	cx, old_clockSeg
+
+ 079D  26: 89 07			mov	es:[bx], ax
+ 07A0  26: 89 4F 02			mov	es:[bx+2], cx
+
+ 07A4  07				pop	ES
+ 07A5  59				pop	cx
+ 07A6  5B				pop	bx
+ 07A7  58				pop	ax
+ 07A8  9D				popf
+ 07A9  C3				ret
+ 07AA				RestoreCH endp
+
+
+				;------------------------------------------------------------------
+
+ 07AA				oldCursor	LABEL	BYTE
+ 07AA 00			OCrow		byte 	0
+ 07AB 00			OCcol		BYTE	0
+ 07AC 00			OCpgnum 	byte 	0
+ 07AD 00			NCrow		byte 	0
+ 07AE 48			NCcol		BYTE	72
+
+
+
+				; http://www.ablmcc.edu.hk/~scy/CIT/8086_bios_and_dos_interrupts.htm
+
+				;INT 10h / AH = 03h - get cursor position and size.
+				;input:
+				;BH = page number.
+				;return:
+				;DH = row.
+				;DL = column.
+				;CH = cursor start line.
+				;CL = cursor bottom line.
+
+
+ 07AF				clock PROC
+ 07AF  9C				pushf
+ 07B0  50				push 	ax
+ 07B1  53				push 	bx
+ 07B2  51				push 	cx
+ 07B3  52				push 	dx
+ 07B4  06				push 	es
+ 07B5  E8 0147				call 	getCursor
+ 07B8  80 3E 0750 R 01			cmp 	textsaved, 1
+ 07BD  74 08				je 	go
+ 07BF  E8 002F				call	getStr
+ 07C2  C6 06 0750 R 01			mov 	textsaved, 1
+
+ 07C7				go:
+ 07C7  A0 07AD R			mov 	al, NCrow
+ 07CA  8A 1E 07AE R			mov	bl, NCcol
+ 07CE  50				push 	ax
+ 07CF  53				push  	bx
+ 07D0  E8 0145				call 	SetCursor
+ 07D3  83 C4 04				add 	sp, 4
+ 07D6  E8 00E4				call 	getTime
+ 07D9  E8 008C				call 	FormatTime
+ 07DC  E8 00F7				call 	PrintTime
+
+ 07DF  E8 0153				call 	RestoreCursor
+ 07E2  07				pop 	es
+ 07E3  5A				pop 	dx
+ 07E4  59				pop 	cx
+ 07E5  5B				pop 	bx
+ 07E6  58				pop 	ax
+ 07E7  9D				popf
+ 07E8  C3				ret
+ 07E9				clock endp
+
+
+ 07E9				OldStr	LABEL	BYTE
+ 07E9  0008 [			oldChrs BYTE	8 dup("0")
+        30
+       ]
+
+ 07F1				getStr PROC ;gets and saves strings in memory
+ 07F1  9C				pushf
+ 07F2  50				push 	ax
+ 07F3  53				push 	bx
+ 07F4  51				push 	cx
+ 07F5  52				push 	dx
+ 07F6  57				push 	di
+ 07F7  BF 0000				mov 	di, 0
+
+ 07FA  B9 0007				mov 	cx, 7
+ 07FD				grab:
+
+ 07FD  A0 07AD R			mov 	al, NCrow
+ 0800  8A 16 07AE R			mov	dl, NCcol
+ 0804  02 D1				add 	dl, cl
+ 0806  52				push  	dx
+ 0807  50				push 	ax
+ 0808  E8 010D				call 	SetCursor
+ 080B  83 C4 04				add 	sp, 4
+
+ 080E  E8 001A				call 	readAt	;AH = character's attribute (text mode only) (see #00014)
+							;AL = character
+ 0811  8B F9				mov 	di, cx
+ 0813  BB 07E9 R			mov 	bx, offset oldChrs
+ 0816  2E: 88 01			mov 	cs:[bx + di], al
+ 0819  49				dec	cx
+ 081A  83 F9 FF				cmp 	cx, -1
+ 081D  75 DE				jne 	grab
+ 081F  EB 00				jmp 	done
+
+ 0821				done:
+
+ 0821  E8 0111				call 	RestoreCursor
+
+ 0824  5F				pop 	di
+ 0825  5A				pop 	dx
+ 0826  59				pop 	cx
+ 0827  5B				pop 	bx
+ 0828  58				pop 	ax
+ 0829  9D				popf
+ 082A  C3				ret
+ 082B				getStr endp
+
+ 082B				readAt PROC		;ret:	AH = character's attribute (text mode only) (see #00014)
+							;	AL = character
+ 082B  9C				pushf
+ 082C  53				push 	bx
+
+ 082D  BB 0000				mov 	bx, 0
+ 0830  B4 08				mov	ah, 08h
+ 0832  CD 10				int 	10h
+
+ 0834  5B				pop 	bx
+ 0835  9D				popf
+ 0836  C3				ret
+ 0837				readAt endp
+
+ 0837				RestoreText PROC  ;; PRINT STRING OF TIME IN MEM
+ 0837  9C				pushf
+ 0838  50				push 	ax
+ 0839  53				push 	bx
+ 083A  51				push 	cx
+ 083B  52				push 	dx
+ 083C  55				push 	bp
+ 083D  06				push 	es
+
+ 083E  0E				push 	cs
+ 083F  07				pop 	es
+
+ 0840  BD 07E9 R			mov  	bp, offset oldChrs
+ 0843  B9 0008				mov 	cx, 8
+
+ 0846  B0 00				mov  	al, 0
+ 0848  B3 07				mov 	bl, 111b   ;Color is red
+ 084A  B7 00				mov  	bh, 0     ;Display page
+ 084C  8A 16 07AE R			mov  	dl, NCcol ;col
+ 0850  8A 36 07AD R			mov	dh, NCrow ;row
+ 0854  B4 13				mov  	ah, 13h   ;print str
+
+ 0856  CD 10				int  10h
+
+ 0858  07				pop 	es
+ 0859  5D			 	pop 	bp
+ 085A  5A				pop 	dx
+ 085B  59				pop 	cx
+ 085C  5B				pop 	bx
+ 085D  58				pop 	ax
+ 085E  9D				popf
+ 085F  C3				ret
+ 0860				RestoreText endp
+
+
+				; int 1Ah
+				;AH = 02h
+				;CF clear to avoid bug (see below)
+
+				;Return:
+				;CF clear if successful
+				;CH = hour (BCD)
+				;CL = minutes (BCD)
+				;DH = seconds (BCD)
+				;DL = daylight savings flag (00h standard time, 01h daylight time)
+				;CF set on error (i.e. clock not running or in middle of update)
+
+ 0860				CurTime Label	BYTE
+ 0860 00 00			H 	byte 	0, 0
+ 0862 3A			colon 	byte 	":"
+ 0863 00 00			M 	byte 	0, 0
+ 0865 3A			colon2 	byte 	":"
+ 0866 00 00			S 	byte 	0, 0
+
+ 0868				FormatTime proc
+ 0868  53				push 	bx
+ 0869  BB 0860 R			mov 	bx, offset H
+ 086C  53				push 	bx
+ 086D  E8 0018				call 	FT
+ 0870  83 C4 02				add 	sp, 2
+
+ 0873  BB 0863 R			mov 	bx, offset M
+ 0876  53				push 	bx
+ 0877  E8 000E				call 	FT
+ 087A  83 C4 02				add 	sp, 2
+
+ 087D  BB 0866 R			mov 	bx, offset S
+ 0880  53				push 	bx
+ 0881  E8 0004				call 	FT
+ 0884  83 C4 02				add 	sp, 2
+ 0887  5B				pop 	bx
+ 0888				FormatTime endp
+
+ 0888				FT PROC
+ 0888  55				push 	bp
+ 0889  8B EC				mov 	bp, sp
+ 088B  9C				pushf
+ 088C  53				push	bx
+ 088D  51				push	cx
+ 088E  52				push	dx
+ 088F  50				push	ax
+
+ 0890  B8 0000				mov 	ax, 0
+ 0893  B9 0000				mov 	cx, 0
+ 0896  BA 0000				mov 	dx, 0
+
+ 0899  8B 5E 04				mov 	bx, SS:[bp + 4]
+ 089C  2E: 8A 07			mov 	al, cs:[bx]
+ 089F  8A D0				mov	dl, al
+ 08A1  B1 04				mov 	cl, 4
+
+ 08A3				make:
+					;bcd decoder UGHGHHGHGHGHHHG
+ 08A3  9C				pushf
+ 08A4  D2 E8				shr	al, cl
+ 08A6  9D				popf
+ 08A7  04 30				add 	al, "0"
+ 08A9  2E: 88 07			mov 	cs:[bx], al
+ 08AC  80 E2 0F				and 	dl, 0fh
+ 08AF  80 C2 30				add 	dl, "0"
+ 08B2  2E: 88 57 01			mov 	cs:[bx + 1], dl
+ 08B6				rt:
+ 08B6  58				pop	ax
+ 08B7  5A				pop	dx
+ 08B8  59				pop	cx
+ 08B9  5B				pop	bx
+ 08BA  9D				popf
+ 08BB  5D				pop 	bp
+ 08BC  C3				ret
+ 08BD				FT ENDP
+
+ 08BD				getTime PROC
+ 08BD  9C			 	pushf
+ 08BE  51				push 	cx
+ 08BF  52				push 	dx
+ 08C0				get:
+ 08C0  B4 02			 	mov 	ah, 02
+ 08C2  CD 1A				int 	1Ah
+
+ 08C4  88 2E 0860 R			mov 	H, ch
+ 08C8  88 0E 0863 R			mov 	M, cl
+ 08CC  88 36 0866 R			mov 	S, dh
+
+ 08D0  72 EE				jc	get
+
+ 08D2  5A				pop 	dx
+ 08D3  59				pop 	cx
+ 08D4  9D			 	popf
+ 08D5  C3				ret
+ 08D6				getTime endp
+
+				;NCrow		byte 	0
+				;NCcol		BYTE	72
+
+				;INT 10h / AH = 13h - write string.
+
+				;input:
+				;AL = write mode:
+				;    bit 0: update cursor after writing;
+				;    bit 1: string contains attributes.
+				;BH = page number.
+				;BL = attribute if string contains only characters (bit 1 of AL is zero).
+				;CX = number of characters in string (attributes are not counted).
+				;DL,DH = column, row at which to start writing.
+				;ES:BP points to string to be printed.
+
+ 08D6				PrintTime PROC  ;; PRINT STRING OF TIME IN MEM
+ 08D6  9C				pushf
+ 08D7  50				push 	ax
+ 08D8  53				push 	bx
+ 08D9  51				push 	cx
+ 08DA  52				push 	dx
+ 08DB  55				push 	bp
+ 08DC  06				push 	es
+
+ 08DD  0E				push 	cs
+ 08DE  07				pop 	es
+
+ 08DF  BD 0860 R			mov  	bp, offset CurTime
+ 08E2  B9 0008				mov 	cx, 8
+
+ 08E5  B0 00				mov  	al, 0
+ 08E7  B3 0D				mov 	bl, 0Dh   ;Color is red
+ 08E9  B7 00				mov  	bh, 0     ;Display page
+ 08EB  8A 16 07AE R			mov  	dl, NCcol ;col
+ 08EF  8A 36 07AD R			mov	dh, NCrow ;row
+ 08F3  B4 13				mov  	ah, 13h   ;print str
+
+ 08F5  CD 10				int  10h
+
+ 08F7  07				pop 	es
+ 08F8  5D			 	pop 	bp
+ 08F9  5A				pop 	dx
+ 08FA  59				pop 	cx
+ 08FB  5B				pop 	bx
+ 08FC  58				pop 	ax
+ 08FD  9D				popf
+ 08FE  C3				ret
+ 08FF				PrintTime endp
+
+ 08FF				getCursor PROC ; Gets cursor and saves in mem as ocrow and occol
+ 08FF  9C				pushf
+ 0900  50				push 	ax
+ 0901  53				push 	bx
+ 0902  51				push 	cx
+ 0903  52				push 	dx
+
+ 0904  B4 03				mov 	ah, 03h
+ 0906  B7 00				mov 	bh, 0
+ 0908  CD 10				int 	10h   	; get cursor
+
+ 090A  88 36 07AA R			mov 	OCrow, dh ; old row
+ 090E  88 16 07AB R			mov 	OCcol, dl ; old col
+
+ 0912  5A				pop 	dx
+ 0913  59				pop 	cx
+ 0914  5B				pop 	bx
+ 0915  58				pop 	ax
+ 0916  9D				popf
+ 0917  C3				ret
+ 0918				getCursor endp
+
+ 0918				SetCursor PROC
+ 0918  55				push 	bp
+ 0919  8B EC				mov 	bp, sp
+ 091B  9C				pushf
+ 091C  50				push 	ax
+ 091D  53				push 	bx
+ 091E  51				push 	cx
+ 091F  52				push 	dx
+
+ 0920  8B 4E 04				mov	cx, [bp + 4]
+ 0923  8B 56 06				mov	dx, [bp + 6]	;col
+ 0926  8A F1				mov  	dh, cl  ;	;Row
+ 0928  B7 00				mov  	bh, 0    	;Display page
+ 092A  B4 02				mov  	ah, 02h  	;SetCursorPosition
+ 092C  CD 10				int  	10h
+
+ 092E  5A				pop 	dx
+ 092F  59				pop 	cx
+ 0930  5B				pop 	bx
+ 0931  58				pop 	ax
+ 0932  9D				popf
+ 0933  5D				pop 	bp
+ 0934  C3				ret
+ 0935				SetCursor endp
+
+ 0935				RestoreCursor PROC
+ 0935  9C				pushf
+ 0936  50				push 	ax
+ 0937  53				push 	bx
+ 0938  52				push 	dx
+
+ 0939  8A 16 07AB R			mov  dl, OCcol   ;Column
+ 093D  8A 36 07AA R			mov  dh, OCrow   ;Row
+ 0941  B7 00				mov  bh, 0       ;Display page
+ 0943  B4 02				mov  ah, 02h     ;SetCursorPosition
+ 0945  CD 10				int  10h
+
+ 0947  5A				pop 	dx
+ 0948  5B				pop 	bx
+ 0949  58				pop 	ax
+ 094A  9D				popf
+ 094B  C3				ret
+ 094C				RestoreCursor endp
+
+ 094C				WaitOnControl PROC
+ 094C  9C				pushf
+ 094D				check:
+ 094D  80 3E 065E R 00			cmp	ControlPressed, 0
+ 0952  74 F9				je	check
+
+ 0954  E8 FD98				call 	RestoreKBH
+ 0957  E8 FE2F				call	RestoreCH
+
+ 095A  9D				popf
+ 095B  C3				ret
+ 095C				WaitOnControl ENDP
+
+				;------------------------------------- nonTSR under here ----------
+ 095C				CUT	LABEL 	BYTE
+
+ 095C				InstallCH Proc  ; Install Keyboard Handler
+ 095C  9C				pushf
+ 095D  50				push	ax
+ 095E  53				push	bx
+ 095F  06				push	ES
+
+ 0960  B8 0000				mov	ax, 0
+ 0963  8E C0				mov	es, ax
+ 0965  BB 0020				mov	bx, ClockIVT * 4
+
+ 0968  26: C7 07 0751 R			mov	es:[bx], ClockHandler
+ 096D  26: 8C 4F 02			mov	es:[bx+2], cs
+
+ 0971  07				pop	ES
+ 0972  5B				pop	bx
+ 0973  58				pop	ax
+ 0974  9D				popf
+ 0975  C3				ret
+ 0976				InstallCH endp
+
+ 0976				SaveCH Proc  ; Install Keyboard Handler
+ 0976  9C				pushf
+ 0977  50				push	ax
+ 0978  53				push	bx
+ 0979  51				push	cx
+ 097A  06				push	ES
+
+ 097B  B8 0000				mov	ax, 0
+ 097E  8E C0				mov	es, ax
+ 0980  BB 0020				mov	bx, ClockIVT * 4
+
+ 0983  26: 8B 07			mov	ax, es:[bx]
+ 0986  26: 8B 4F 02			mov	cx, es:[bx+2]
+
+ 098A  A3 074B R			mov	old_ClockOffset, ax
+ 098D  89 0E 074D R			mov	old_ClockSeg, cx
+
+ 0991  07				pop	ES
+ 0992  59				pop	cx
+ 0993  5B				pop	bx
+ 0994  58				pop	ax
+ 0995  9D				popf
+ 0996  C3				ret
+ 0997				SaveCH endp
+
+ 0997 61 00			mystr	byte	"a", 0
+
+ 0999				setup:
+ 0999  8C D0				mov	ax, SS		;SS
+ 099B  A3 02CA R			mov	OldSS, ax	;SS
+
+ 099E  8C D8				mov	ax, DS		;DS
+ 09A0  A3 02C8 R			mov	OldDS, ax	;DS
+
+ 09A3  8C C8				mov	ax, CS		;CS
+ 09A5  8E D0				mov	SS, ax
+ 09A7  8E D8				mov	DS, ax
+
+ 09A9  8B C4				mov	ax, sp		;SP
+ 09AB  A3 0294 R			mov	oldsp, ax
+
+ 09AE  B8 0293 R			mov	ax, OFFSET cs:MySP
+ 09B1  8B E0				mov	sp, ax
+					; END OF SEG SETUP
+
+ 09B3  E8 FD74				call	SaveKBH
+ 09B6  E8 FD57				call	InstallKBH
+
+ 09B9  E8 FFBA				call	SaveCH
+ 09BC  E8 FF9D				call	InstallCH
+
+ 09BF  E8 FF8A				call 	WaitOnControl
+
+					;mov 	ax, 0
+					;mov 	ah, 31h
+					;mov 	cx, cs
+					;mov 	es, cx
+					;lea 	dx, CUT
+
+ 09C2  B8 4C00				mov 	ax, 4c00h
+ 09C5  CD 21				int 	21h
+
+				END entryPoint
+Microsoft (R) Macro Assembler Version 6.11		    11/02/18 16:08:56
+Keyping							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_TEXT  . . . . . . . . . . . . .	16 Bit	 09C7	  Word	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	16 Bit	 0000	  Word	  Public  'DATA'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+ClockHandler . . . . . . . . . .	P Near	 0751	  _TEXT	Length= 0038 Public
+  handle . . . . . . . . . . . .	L Near	 0775	  _TEXT	
+FT . . . . . . . . . . . . . . .	P Near	 0888	  _TEXT	Length= 0035 Public
+  make . . . . . . . . . . . . .	L Near	 08A3	  _TEXT	
+  rt . . . . . . . . . . . . . .	L Near	 08B6	  _TEXT	
+FormatTime . . . . . . . . . . .	P Near	 0868	  _TEXT	Length= 0020 Public
+InstallCH  . . . . . . . . . . .	P Near	 095C	  _TEXT	Length= 001A Public
+InstallKBH . . . . . . . . . . .	P Near	 0710	  _TEXT	Length= 001A Public
+KeyboardHandler  . . . . . . . .	P Near	 0674	  _TEXT	Length= 007B Public
+  shift  . . . . . . . . . . . .	L Near	 06AD	  _TEXT	
+  shift2 . . . . . . . . . . . .	L Near	 06B1	  _TEXT	
+  clockoff . . . . . . . . . . .	L Near	 06C7	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 06D7	  _TEXT	
+PrintTime  . . . . . . . . . . .	P Near	 08D6	  _TEXT	Length= 0029 Public
+RestoreCH  . . . . . . . . . . .	P Near	 0789	  _TEXT	Length= 0021 Public
+RestoreCursor  . . . . . . . . .	P Near	 0935	  _TEXT	Length= 0017 Public
+RestoreKBH . . . . . . . . . . .	P Near	 06EF	  _TEXT	Length= 0021 Public
+RestoreText  . . . . . . . . . .	P Near	 0837	  _TEXT	Length= 0029 Public
+SaveCH . . . . . . . . . . . . .	P Near	 0976	  _TEXT	Length= 0021 Public
+SaveKBH  . . . . . . . . . . . .	P Near	 072A	  _TEXT	Length= 0021 Public
+SetCursor  . . . . . . . . . . .	P Near	 0918	  _TEXT	Length= 001D Public
+WaitOnControl  . . . . . . . . .	P Near	 094C	  _TEXT	Length= 0010 Public
+  check  . . . . . . . . . . . .	L Near	 094D	  _TEXT	
+clock  . . . . . . . . . . . . .	P Near	 07AF	  _TEXT	Length= 003A Public
+  go . . . . . . . . . . . . . .	L Near	 07C7	  _TEXT	
+getCursor  . . . . . . . . . . .	P Near	 08FF	  _TEXT	Length= 0019 Public
+getStr . . . . . . . . . . . . .	P Near	 07F1	  _TEXT	Length= 003A Public
+  grab . . . . . . . . . . . . .	L Near	 07FD	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0821	  _TEXT	
+getTime  . . . . . . . . . . . .	P Near	 08BD	  _TEXT	Length= 0019 Public
+  get  . . . . . . . . . . . . .	L Near	 08C0	  _TEXT	
+readAt . . . . . . . . . . . . .	P Near	 082B	  _TEXT	Length= 000C Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0000h	 
+@Model . . . . . . . . . . . . .	Number	 0001h	 
+@code  . . . . . . . . . . . . .	Text   	 DGROUP
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+ALT  . . . . . . . . . . . . . .	Number	 0008h	 
+CTRL . . . . . . . . . . . . . .	Number	 0004h	 
+CUT  . . . . . . . . . . . . . .	Byte	 095C	  _TEXT	
+ClockIVT . . . . . . . . . . . .	Number	 0008h	 
+ControlPressed . . . . . . . . .	Byte	 065E	  _TEXT	
+CurTime  . . . . . . . . . . . .	Byte	 0860	  _TEXT	
+DOSDATA  . . . . . . . . . . . .	Number	 0040h	 
+DOS  . . . . . . . . . . . . . .	Number	 0021h	 
+H  . . . . . . . . . . . . . . .	Byte	 0860	  _TEXT	
+KEYFLAG  . . . . . . . . . . . .	Number	 0017h	 
+KeyboardIVT  . . . . . . . . . .	Number	 0009h	 
+LEFTSHIFT  . . . . . . . . . . .	Number	 0002h	 
+MySP1  . . . . . . . . . . . . .	Word	 045C	  _TEXT	
+MySP2  . . . . . . . . . . . . .	Word	 0625	  _TEXT	
+MySP . . . . . . . . . . . . . .	Word	 0293	  _TEXT	
+MyStack1 . . . . . . . . . . . .	Word	 02CC	  _TEXT	
+MyStack2 . . . . . . . . . . . .	Word	 0495	  _TEXT	
+MyStack  . . . . . . . . . . . .	Word	 0103	  _TEXT	
+M  . . . . . . . . . . . . . . .	Byte	 0863	  _TEXT	
+NCcol  . . . . . . . . . . . . .	Byte	 07AE	  _TEXT	
+NCrow  . . . . . . . . . . . . .	Byte	 07AD	  _TEXT	
+OCcol  . . . . . . . . . . . . .	Byte	 07AB	  _TEXT	
+OCpgnum  . . . . . . . . . . . .	Byte	 07AC	  _TEXT	
+OCrow  . . . . . . . . . . . . .	Byte	 07AA	  _TEXT	
+OldDS1 . . . . . . . . . . . . .	Word	 0491	  _TEXT	
+OldDS2 . . . . . . . . . . . . .	Word	 065A	  _TEXT	
+OldDS  . . . . . . . . . . . . .	Word	 02C8	  _TEXT	
+OldSS1 . . . . . . . . . . . . .	Word	 0493	  _TEXT	
+OldSS2 . . . . . . . . . . . . .	Word	 065C	  _TEXT	
+OldSS  . . . . . . . . . . . . .	Word	 02CA	  _TEXT	
+OldStr . . . . . . . . . . . . .	Byte	 07E9	  _TEXT	
+RIGHTSHIFT . . . . . . . . . . .	Number	 0001h	 
+S  . . . . . . . . . . . . . . .	Byte	 0866	  _TEXT	
+TERMINATE  . . . . . . . . . . .	Number	 4C00h	 
+clockon  . . . . . . . . . . . .	Byte	 074F	  _TEXT	
+colon2 . . . . . . . . . . . . .	Byte	 0865	  _TEXT	
+colon  . . . . . . . . . . . . .	Byte	 0862	  _TEXT	
+empty1 . . . . . . . . . . . . .	Byte	 045F	  _TEXT	
+empty2 . . . . . . . . . . . . .	Byte	 0628	  _TEXT	
+empty  . . . . . . . . . . . . .	Byte	 0296	  _TEXT	
+entryPoint . . . . . . . . . . .	L Near	 0100	  _TEXT	
+harry  . . . . . . . . . . . . .	Byte	 065F	  _TEXT	
+myspace1 . . . . . . . . . . . .	Byte	 045C	  _TEXT	
+myspace2 . . . . . . . . . . . .	Byte	 0625	  _TEXT	
+myspace  . . . . . . . . . . . .	Byte	 0293	  _TEXT	
+mystr  . . . . . . . . . . . . .	Byte	 0997	  _TEXT	
+oldChrs  . . . . . . . . . . . .	Byte	 07E9	  _TEXT	
+oldCursor  . . . . . . . . . . .	Byte	 07AA	  _TEXT	
+oldSP1 . . . . . . . . . . . . .	Word	 045D	  _TEXT	
+oldSP2 . . . . . . . . . . . . .	Word	 0626	  _TEXT	
+oldSP  . . . . . . . . . . . . .	Word	 0294	  _TEXT	
+old_clockOffset  . . . . . . . .	Word	 074B	  _TEXT	
+old_clockSeg . . . . . . . . . .	Word	 074D	  _TEXT	
+old_clock  . . . . . . . . . . .	DWord	 074B	  _TEXT	
+old_keyOffset  . . . . . . . . .	Word	 0672	  _TEXT	
+old_keySeg . . . . . . . . . . .	Word	 0670	  _TEXT	
+old_key  . . . . . . . . . . . .	DWord	 0670	  _TEXT	
+setup  . . . . . . . . . . . . .	L Near	 0999	  _TEXT	
+textsaved  . . . . . . . . . . .	Byte	 0750	  _TEXT	
+
+	   0 Warnings
+	   0 Errors

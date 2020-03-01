@@ -1,0 +1,295 @@
+Microsoft (R) Macro Assembler Version 6.11		    09/29/18 17:56:48
+procs							     Page 1 - 1
+
+
+				TITLE procs
+				; Anthony Reyes
+				; Project 3
+				; cs240
+
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.8086
+
+ 0000				.data
+ 0000 30 31 32 33 34 35		harry	BYTE "0123456789ABCDEF", 0
+       36 37 38 39 41 42
+       43 44 45 46 00
+ 0011 30 31 32 33 34 35		darry	BYTE "0123456789", 0
+       36 37 38 39 00
+
+ 0000				.code
+
+				; BX = Address of array, Dl = size per element (1, 2 bytes), CX = ArrayLen
+				; Return sum in AX
+ 0000				ArraySum proc
+ 0000  9C				pushf
+ 0001  53				push	bx
+ 0002  51				push	cx
+ 0003  52				push	dx
+ 0004  57				push	di
+ 0005  B6 00				mov	dh, 0
+ 0007  B8 0000				mov	ax, 0
+ 000A  EB 0D				jmp	cond
+					
+ 000C				L0:	
+ 000C  2B CA				sub	cx, dx
+ 000E  8B F9				mov	di, cx
+ 0010  03 01				add	ax, [bx + di]
+ 0012  83 F9 00				cmp	cx, 0
+ 0015  74 07				je	rt
+ 0017  EB F3				jmp	L0
+ 0019				cond:
+ 0019  83 F9 00				cmp	cx, 0
+ 001C  7F EE				jg	L0
+ 001E				rt:	
+ 001E  5F				pop	di
+ 001F  5A				pop	dx
+ 0020  59				pop	cx
+ 0021  5B				pop	bx
+ 0022  9D				popf				
+ 0023  C3				ret
+ 0024				ArraySum endp
+
+				; takes ax as unsigned word and computes its factorial recursively
+				; Return in ax
+ 0024				Fact proc	
+ 0024  53				push	bx
+ 0025  52				push	dx
+ 0026  9C				pushf
+ 0027  83 F8 09				cmp	ax, 9  ; hard coded :(
+ 002A  7D 14				jge 	overf
+ 002C  83 F8 00				cmp	ax, 0
+ 002F  7F 05				jg	L1
+					
+ 0031  B8 0001				mov	ax, 1
+ 0034  EB 14				jmp	rt
+ 0036				L1:
+ 0036  50				push 	ax
+ 0037  48				dec	ax	
+ 0038  E8 FFE9				call	Fact
+ 003B				L2:	
+ 003B  5B				pop	bx
+ 003C  F7 E3				mul	bx
+ 003E  EB 0A				jmp 	rt
+ 0040				overf:
+ 0040  5A				pop	dx
+ 0041  81 CA 0800			or	dx, 100000000000b	;Mask
+ 0045  52				push	dx
+ 0046  9D				popf
+ 0047  5A				pop	dx
+ 0048  5B				pop	bx
+ 0049  C3				ret
+ 004A				rt:	
+ 004A  9D				popf
+ 004B  5A				pop	dx	
+ 004C  5B				pop	bx
+ 004D  C3				ret
+ 004E				Fact endp
+
+				;PRINTHEXDIGIT from P2
+ 004E				PHD proc
+ 004E  9C				pushf
+ 004F  50				push	ax
+ 0050  53				push	bx
+ 0051  51				push	cx
+ 0052  52				push	dx
+ 0053  56				push	si
+					
+ 0054  BB 0000 R			mov	bx, OFFSET harry
+ 0057  B1 04				mov	cl, 4
+					
+ 0059  D2 E2				shl	dl, cl	
+ 005B  B8 0000				mov	ax, 0000h
+ 005E  8A C2				mov	al, dl
+ 0060  D3 E8				shr	ax, cl
+ 0062  8B F0				mov	si, ax
+					
+ 0064  8A 10				mov	dl, [bx + si]
+ 0066  B4 02				mov	ah, 02h
+ 0068  CD 21				int	21h	
+					
+ 006A  5E				pop	si
+ 006B  5A				pop	dx
+ 006C  59				pop	cx
+ 006D  5B				pop	bx
+ 006E  58				pop	ax
+ 006F  9D				popf
+ 0070  C3				ret
+ 0071				PHD endp
+
+				; BX is the address of an array of bytes and CX is the len
+				; write each byte of the array followed by a space
+ 0071				HexOut proc
+ 0071  9C				pushf
+ 0072  50				push	ax
+ 0073  53				push	bx
+ 0074  51				push	cx
+ 0075  52				push	dx
+ 0076  57				push	di
+ 0077  56				push	si
+
+ 0078  8B C1				mov	ax, cx	
+ 007A  BF 0000 R			mov	di, OFFSET harry
+ 007D  B1 04				mov	cl, 4 ;byte sft
+ 007F  BE 0000				mov	si, 0
+
+ 0082				L1:
+ 0082  3B F0				cmp	si, ax     ;; first digit
+ 0084  73 17				jae	done		
+ 0086  8A 10				mov	dl, [bx + si]
+ 0088  52				push	dx	
+ 0089  D2 EA				shr	dl, cl	   ;; 10h -> 01h
+ 008B  E8 FFC0				call	PHD
+					
+ 008E  5A				pop	dx		;2nd digit
+ 008F  E8 FFBC				call	PHD
+					
+ 0092  50				push	ax
+ 0093  B2 20				mov	dl, " "		; space
+ 0095  B4 02				mov	ah, 02h
+ 0097  CD 21				int	21h
+ 0099  58				pop	ax
+					
+ 009A  46				inc	si
+ 009B  EB E5				jmp	L1
+
+ 009D				done:
+ 009D  5E				pop	si
+ 009E  5F				pop	di
+ 009F  5A				pop	dx
+ 00A0  59				pop	cx
+ 00A1  5B				pop	bx
+ 00A2  58				pop	ax
+ 00A3  9D				popf	
+ 00A4  C3				ret
+ 00A5				HexOut endp
+
+				; AX is a singed int, write it signed
+				; ex. if AX is E168h out should be -7832
+ 00A5				PrintInt proc
+ 00A5  9C				pushf	
+ 00A6  53				push	bx
+ 00A7  51				push	cx
+ 00A8  52				push	dx
+ 00A9  50				push	ax
+					
+ 00AA  83 F8 00				cmp	ax, 0
+ 00AD  74 23				je	rt
+ 00AF  3D 8000				cmp	ax, 8000h
+ 00B2  72 0E				jb	L1
+ 00B4  73 00				jae	Negative
+
+ 00B6				Negative:
+ 00B6  50				push	ax	
+ 00B7  B2 2D				mov	dl, "-"
+ 00B9  B4 02				mov	ah, 02h
+ 00BB  CD 21				int	21h
+ 00BD  58				pop	ax
+ 00BE  F7 D8				neg	ax
+ 00C0  EB 00				jmp	L1			
+
+ 00C2				L1:
+ 00C2  B9 000A				mov	cx, 10d		; div by 10
+ 00C5  BA 0000				mov	dx, 0		;
+ 00C8  F7 F1				div	cx		;
+ 00CA  52				push 	dx		; grab remainder
+ 00CB  E8 FFD7				call	printint	; recurse
+ 00CE  E8 FF7D				call	PHD		; print dx post return
+ 00D1  5A				pop	dx		; pop for good measure
+ 00D2				rt:	
+ 00D2  58				pop	ax
+ 00D3  5A				pop	dx	
+ 00D4  59				pop	cx
+ 00D5  5B				pop	bx
+ 00D6  9D				popf
+ 00D7  C3				ret
+ 00D8				PrintInt endp
+
+				end
+
+
+
+Microsoft (R) Macro Assembler Version 6.11		    09/29/18 17:56:48
+procs							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 001C	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 00D8	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+ArraySum . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0024 Public STDCALL
+  L0 . . . . . . . . . . . . . .	L Near	 000C	  _TEXT	
+  cond . . . . . . . . . . . . .	L Near	 0019	  _TEXT	
+  rt . . . . . . . . . . . . . .	L Near	 001E	  _TEXT	
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Fact . . . . . . . . . . . . . .	P Near	 0024	  _TEXT	Length= 002A Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0036	  _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 003B	  _TEXT	
+  overf  . . . . . . . . . . . .	L Near	 0040	  _TEXT	
+  rt . . . . . . . . . . . . . .	L Near	 004A	  _TEXT	
+HexOut . . . . . . . . . . . . .	P Near	 0071	  _TEXT	Length= 0034 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0082	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 009D	  _TEXT	
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PHD  . . . . . . . . . . . . . .	P Near	 004E	  _TEXT	Length= 0023 Public STDCALL
+PrintInt . . . . . . . . . . . .	P Near	 00A5	  _TEXT	Length= 0033 Public STDCALL
+  Negative . . . . . . . . . . .	L Near	 00B6	  _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 00C2	  _TEXT	
+  rt . . . . . . . . . . . . . .	L Near	 00D2	  _TEXT	
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+darry  . . . . . . . . . . . . .	Byte	 0011	  _DATA	
+harry  . . . . . . . . . . . . .	Byte	 0000	  _DATA	
+
+	   0 Warnings
+	   0 Errors

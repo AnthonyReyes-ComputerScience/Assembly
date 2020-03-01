@@ -1,0 +1,333 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/08/18 22:04:27
+DosTunes						     Page 1 - 1
+
+
+				Title DosTunes
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.386
+
+ 0000				.data
+				;bytecount	DWORD	0h
+ 0000  0064 [			raw		BYTE	100 dup(0)
+        00
+       ]
+ 0064  0064 [			filename	BYTE	100 dup(0)
+        00
+       ]
+ 00C8  0032 [			buffer		BYTE	50 dup(0ffh)
+        FF
+       ]
+				;alumbo		BYTE	17 dup(0)
+ 00FA 0000			filehandle	WORD	?
+				;harry		BYTE	"0123456789abcdef"
+ 00FC 59 4F 2C 20 59 4F		fee		BYTE	"YO, YOUR FILE DON'T OPEN", 0
+       55 52 20 46 49 4C
+       45 20 44 4F 4E 27
+       54 20 4F 50 45 4E
+       00
+
+ 0000				.code
+
+				;MODIFIED ONLY 7e >  ASCIIZ > 32
+ 0000				PrintString Proc ; takes offset in DX and prints string
+ 0000  9C				pushf
+ 0001  50				push	ax
+ 0002  53				push	bx
+ 0003  52				push	dx
+
+ 0004  8B DA				mov	bx, dx
+ 0006  EB 09				jmp	print
+ 0008				dot:
+ 0008  B2 2E				mov	dl, "."
+ 000A  B4 02				mov	ah, 02h
+ 000C  CD 21				int	21h
+ 000E  43				inc	bx
+ 000F  EB 00				jmp	print
+ 0011				print:
+ 0011  8A 17				mov	dl, [bx]
+ 0013  80 FA FF				cmp	dl, 0ffh
+ 0016  74 11				je	brk
+
+ 0018  80 FA 7E				cmp	dl, 126
+ 001B  7F EB				jg	dot
+
+ 001D  80 FA 20				cmp	dl, 32
+ 0020  7C E6				jl	dot
+ 0022  B4 02				mov	ah, 02h
+ 0024  CD 21				int	21h
+ 0026  43				inc	bx
+ 0027  EB E8				jmp	print
+ 0029				brk:
+ 0029  5A				pop	dx
+ 002A  5B				pop	bx
+ 002B  58				pop	ax
+ 002C  9D				popf
+ 002D  C3				ret
+ 002E				PrintString endP
+
+ 002E				FileIn proc
+
+ 002E  53				push	bx
+ 002F  51				push	cx
+ 0030  52				push	dx
+
+ 0031				go:
+ 0031  8B 1E 00FA R			mov	bx, filehandle
+ 0035  B9 0001				mov	cx, 1h
+ 0038  BA 00C8 R			mov	dx, offset buffer
+ 003B  66| B8 00000000			mov	eax, 0
+
+ 0041  B4 3F				mov	ah, 3Fh; read
+ 0043  CD 21				int	21h
+
+ 0045				brk:
+
+ 0045  5A				pop	dx
+ 0046  59				pop	cx
+ 0047  5B				pop	bx
+ 0048  C3				ret
+ 0049				FileIn endp
+
+ 0049				SegCopy proc
+				; SegCopy:takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+				; return in BX of file address (OFFSET filename)
+ 0049  9C				pushf
+ 004A  52				push	dx
+ 004B  57				push	di
+ 004C  56				push	si
+ 004D  51				push	cx
+
+ 004E  BE 0000				mov	si, 0
+ 0051  BB 0000 R			mov	bx, OFFSET raw
+
+ 0054  B5 00				mov	ch, 0
+ 0056  26: 8A 0D			mov	cl, ES:[di]
+
+ 0059  47				inc	di
+
+ 005A				L1:
+ 005A  83 F9 00				cmp	cx, 0
+ 005D  74 0A				je	brk
+ 005F  26: 8A 15			mov	dl, ES:[di]
+
+ 0062  88 10				mov	DS:[bx + si], dl
+
+ 0064  47				inc	di
+ 0065  46				inc	si
+ 0066  49				dec	cx
+ 0067  EB F1				jmp	L1
+
+ 0069				brk:
+ 0069  59				pop	cx
+ 006A  5E				pop	si
+ 006B  5F				pop	di
+ 006C  5A				pop	dx
+ 006D  9D				popf
+ 006E  C3				ret
+ 006F				SegCopy endP
+
+ 006F				openFile proc
+ 006F  52				push	dx
+
+ 0070  8B D3				mov	dx, bx
+ 0072  B0 00				mov	al, 0
+
+ 0074  B4 3D				mov	ah, 3dh ; ax takes file handle for reading
+ 0076  CD 21				int	21h
+ 0078  5A				pop	dx
+ 0079  C3				ret
+ 007A				openFile endp
+
+ 007A				closeFile proc
+ 007A  60				pusha
+
+ 007B  8B D8				mov	bx, ax
+ 007D  B4 3E				mov	ah, 3eh
+ 007F  CD 15				int	21
+
+ 0081  61				popa
+ 0082				closeFile endp
+
+ 0082				getFileName Proc
+				; return in bx location of file name in DS (DS:[bx])
+				; SegCopy: takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+ 0082  9C				pushf
+ 0083  50				push	ax
+ 0084  57				push	di
+ 0085  06				push	ES
+
+ 0086  B4 62				mov	ah, 62h
+ 0088  CD 21				int	21h     ;put PSP in bx
+
+ 008A  8E C3				mov	ES, bx
+ 008C  BF 0080				mov	di, 80h
+
+ 008F  E8 FFB7				call	segCopy  ;file name @ in bx
+
+ 0092  07				pop	ES
+ 0093  5F				pop	di
+ 0094  58				pop	ax
+ 0095  9D				popf
+ 0096  C3				ret
+ 0097				getFileName endP
+
+ 0097				cleanname proc
+ 0097  60				pusha
+ 0098  BB 0000 R			mov	bx, offset raw
+ 009B  BD 0064 R			mov	bp, offset filename
+ 009E  BE 0000				mov	si, 0
+ 00A1				L1:
+ 00A1  8A 10				mov	dl, [bx + si]
+ 00A3  80 FA 20				cmp	dl, 20h
+ 00A6  74 19				je	BR
+ 00A8				L2:
+ 00A8  83 FE 64				cmp	si, 100
+ 00AB  74 1E				je	done
+ 00AD  3E: 88 56 00			mov	DS:[bp], dl
+ 00B1  45				inc	bp
+ 00B2  46				inc	si
+ 00B3  8A 10				mov	dl, [bx + si]
+ 00B5  80 FA 20				cmp	dl, 20h
+ 00B8  74 11				je	done
+ 00BA  80 FA 00				cmp	dl, 0
+ 00BD  74 0C				je	done
+ 00BF  EB E7				jmp	L2
+
+ 00C1				BR:
+ 00C1  46				inc	si
+ 00C2  8A 10				mov	dl, [bx + si]
+ 00C4  80 FA 20				cmp	dl, 20h
+ 00C7  74 F8				je	br
+ 00C9  75 DD				jne	L2
+ 00CB				done:
+ 00CB  61				popa
+ 00CC  BB 0064 R			mov	bx, offset filename
+ 00CF  C3				ret
+ 00D0				cleanname endp
+
+
+ 00D0				main PROC
+ 00D0  B8 ---- R			mov	ax, @data
+ 00D3  8E D8				mov	ds, ax
+ 00D5  EB 08				jmp	strt
+ 00D7				Fe:
+ 00D7  BA 00FC R			mov	dx, offset fee
+ 00DA  E8 FF23				call	PrintString
+ 00DD  EB 1C				jmp	done
+
+ 00DF				strt:
+ 00DF  E8 FFA0				call	getFileName 	;file @ in bx
+ 00E2  E8 FFB2				call	cleanname
+
+ 00E5  9C				pushf
+ 00E6  E8 FF86				call	openFile
+ 00E9  72 EC				jc	Fe
+
+ 00EB  9D				popf
+					;ax has file handle
+
+ 00EC  A3 00FA R			mov	filehandle, ax
+ 00EF  B8 0028				mov 	ax, 40
+ 00F2  E8 FF39				call 	FileIn
+ 00F5  BA 00C8 R			mov 	dx, offset BUFFER
+ 00F8  E8 FF05				call 	PrintString
+
+ 00FB				done:
+ 00FB  E8 FF7C				call	closeFile
+ 00FE  B8 4C00				mov	ax, 4C00h
+ 0101  CD 21				int	21h
+ 0103				main ENDP
+
+				end main
+Microsoft (R) Macro Assembler Version 6.11		    11/08/18 22:04:27
+DosTunes						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0115	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0103	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+FileIn . . . . . . . . . . . . .	P Near	 002E	  _TEXT	Length= 001B Public STDCALL
+  go . . . . . . . . . . . . . .	L Near	 0031	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0045	  _TEXT	
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintString  . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 002E Public STDCALL
+  dot  . . . . . . . . . . . . .	L Near	 0008	  _TEXT	
+  print  . . . . . . . . . . . .	L Near	 0011	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0029	  _TEXT	
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SegCopy  . . . . . . . . . . . .	P Near	 0049	  _TEXT	Length= 0026 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 005A	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0069	  _TEXT	
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+cleanname  . . . . . . . . . . .	P Near	 0097	  _TEXT	Length= 0039 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 00A1	  _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 00A8	  _TEXT	
+  BR . . . . . . . . . . . . . .	L Near	 00C1	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 00CB	  _TEXT	
+closeFile  . . . . . . . . . . .	P Near	 007A	  _TEXT	Length= 0008 Public STDCALL
+getFileName  . . . . . . . . . .	P Near	 0082	  _TEXT	Length= 0015 Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00D0	  _TEXT	Length= 0033 Public STDCALL
+  Fe . . . . . . . . . . . . . .	L Near	 00D7	  _TEXT	
+  strt . . . . . . . . . . . . .	L Near	 00DF	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 00FB	  _TEXT	
+openFile . . . . . . . . . . . .	P Near	 006F	  _TEXT	Length= 000B Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+buffer . . . . . . . . . . . . .	Byte	 00C8	  _DATA	
+fee  . . . . . . . . . . . . . .	Byte	 00FC	  _DATA	
+filehandle . . . . . . . . . . .	Word	 00FA	  _DATA	
+filename . . . . . . . . . . . .	Byte	 0064	  _DATA	
+raw  . . . . . . . . . . . . . .	Byte	 0000	  _DATA	
+
+	   0 Warnings
+	   0 Errors

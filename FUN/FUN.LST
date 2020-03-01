@@ -1,0 +1,119 @@
+Microsoft (R) Macro Assembler Version 6.11		    09/03/18 14:13:21
+Woop							     Page 1 - 1
+
+
+
+				Title Woop
+
+				Include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.8086
+
+ 0000				.data
+
+ 0000				.code
+
+ 0000				woop Proc
+ 0000  9C				pushf
+ 0001  51				push cx
+ 0002  50				push ax
+ 0003  B9 0000				mov	cx, 0
+ 0006  B8 00FF				mov	ax, 0FFh
+ 0009				myloop:
+					;inc	cx
+ 0009  E8 0000 E			call 	WriteChar
+ 000C  52				push	dx
+ 000D  BA 000F				mov	dx, 15
+ 0010  5A				pop	dx
+ 0011  3B C8				cmp	cx, ax
+ 0013  7F 02				jg	off
+ 0015  7C F2				jl	myloop
+
+ 0017				off:
+ 0017  58				pop	ax
+ 0018  59				pop	cx
+ 0019  9D				popf
+ 001A  C3				ret
+ 001B				woop endp
+
+ 001B				main Proc
+ 001B  B8 ---- R			mov	ax, @data
+ 001E  8E D8				mov	ds, ax
+					
+ 0020  E8 0000 E			call 	ReadInt	
+
+ 0023  E8 FFDA				call	woop
+
+ 0026  B8 4C00				mov	ax, 4c00h
+ 0029  CD 21				int	21h
+ 002B				main endp
+				end main
+
+Microsoft (R) Macro Assembler Version 6.11		    09/03/18 14:13:21
+Woop							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0000	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 002B	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 001B	  _TEXT	Length= 0010 Public STDCALL
+woop . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 001B Public STDCALL
+  myloop . . . . . . . . . . . .	L Near	 0009	  _TEXT	
+  off  . . . . . . . . . . . . .	L Near	 0017	  _TEXT	
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+
+	   0 Warnings
+	   0 Errors

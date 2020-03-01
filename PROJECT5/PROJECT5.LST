@@ -1,0 +1,431 @@
+Microsoft (R) Macro Assembler Version 6.11		    11/11/18 22:57:20
+Project5						     Page 1 - 1
+
+
+				TITLE Project5
+				; Anthony Reyes
+				; 10 - 7 - 18
+
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.8086
+
+ 0000				.data
+ 0000 50 72 6F 63 65 73		Abort		BYTE	"Process Aborted", 0
+       73 20 41 62 6F 72
+       74 65 64 00
+ 0010 0000			BSize		word	?
+ 0000				.code
+
+ 0000				func proc
+ 0000  55				push	bp
+ 0001  8B EC				mov	bp, sp
+ 0003  9C				pushf
+ 0004  50				push	ax
+ 0005  53				push	bx
+ 0006  51				push	cx
+ 0007  52				push	dx
+ 0008  56				push	si
+ 0009  57				push	di
+					
+
+ 000A  5F				pop	di
+ 000B  5E				pop	si
+ 000C  5A				pop	dx
+ 000D  59				pop	cx
+ 000E  5B				pop	bx
+ 000F  58				pop	ax	
+ 0010  9D				popf
+ 0011  5D				pop	bp
+ 0012  C3				ret
+ 0013				func endp
+
+				;---------------------------------SAFE READ-----------------------------------
+				;AH = 07h receive keystroke
+				;21h
+				;al gets key
+
+				;User enters string and it displays to be stored into a buffer
+				;1. take-key 2. examine key ([1-0, a-z, A-Z, Printable], del, ctl-c, otherkey)
+				;3. print if printable (del moves cursor back so print del and space)
+				;   Enter exits safley and ^C exits with an error message
+				;4. always verify buffer size (error if exceed)
+
+ 0013				GetKey Proc
+ 0013  9C				pushf
+ 0014  B0 00				mov	al, 0
+ 0016  B4 07				mov	ah, 07h
+ 0018  CD 21				int	21h
+ 001A  9D				popf		
+ 001B  C3				ret
+ 001C				GetKey ENDP
+
+				;Stack has ax at bp + 4
+				;Scan to see what to do and pass it to cx
+				;cx will hold 1 for a normal character
+				;key: 1 ascii(32-7eh), 0 for OoB, 2 del, 3 enter.
+ 001C				ScanKey PROC
+ 001C  55				push	bp
+ 001D  8B EC				mov	bp, sp
+ 001F  9C				pushf
+ 0020  50				push	ax
+ 0021  53				push	bx
+ 0022  B9 0000				mov	cx, 0
+ 0025  EB 00				jmp	get	
+
+ 0027				get:
+ 0027  8B 46 04				mov	ax, [bp + 4]
+ 002A  83 F8 00				cmp	ax, 0
+ 002D  74 3F				je	done
+ 002F  83 F8 03				cmp	ax, 3
+ 0032  74 25				je	CtrC		; ^C
+ 0034  83 F8 08				cmp	ax, 8
+ 0037  74 16				je	del		; al = Del
+ 0039  83 F8 0D				cmp	ax, 0dh
+ 003C  74 16				je	Ent		; al = 0d
+ 003E  83 F8 20				cmp	ax, 32
+ 0041  7C 07				jl	OoB		; al < 32
+ 0043  83 F8 7E				cmp	ax, 126
+ 0046  77 02				ja	OoB		; al > 7eh
+ 0048  EB 21				jmp	norm
+ 004A				OoB: 
+				; Out of bounds
+ 004A  B9 0001				mov	cx, 1
+ 004D  EB 1F				jmp	done
+ 004F				del:
+ 004F  B9 0003				mov	cx, 3
+ 0052  EB 1A				jmp	done	
+ 0054				Ent:
+ 0054  B9 0004				mov	cx, 4
+ 0057  EB 15				jmp	done
+ 0059				CtrC:
+ 0059  52				push	dx
+ 005A  E8 0000 E			call	NewLine
+ 005D  BA 0000 R			mov	dx, offset abort
+ 0060  E8 0000 E			call	WriteString      ;IMPORT WRITE STRINGGGGGGGGGGGGGG!!!!!!!!!
+ 0063  5A				pop	dx
+ 0064  B8 4C00				mov	ax, 4C00h
+ 0067  CD 21				int	21h ;  Back to dos
+ 0069  EB 03				jmp	done
+ 006B				norm:
+ 006B  B9 0002				mov	cx, 2	
+
+ 006E				done:
+ 006E  5B				pop	bx
+ 006F  58				pop	ax	
+ 0070  9D				popf
+ 0071  5D				pop	bp
+ 0072  C3				ret
+ 0073				ScanKey endp
+
+ 0073				SafeRead PROC
+				;BX = ADDRESS
+				;DX = SIZE
+ 0073  55				push	bp
+ 0074  8B EC				mov	bp, sp
+ 0076  9C				pushf
+ 0077  50				push	ax
+ 0078  53				push	bx
+ 0079  51				push	cx
+ 007A  52				push	dx
+
+ 007B  8B 56 04				mov	dx, [bp + 4]
+ 007E  8B 5E 06				mov	bx, [bp + 6]
+ 0081  89 16 0010 R			mov	BSize, dx
+ 0085  83 FA 01				cmp	dx, 1
+ 0088  76 0D				jbe	done
+ 008A  BA 0000				mov	dx, 0
+ 008D				L1:	
+ 008D  E8 0076				call	body
+ 0090  83 F9 04				cmp	cx, 4
+ 0093  74 02				je	done
+ 0095  EB F6				jmp	L1	
+					;exit under cond
+ 0097				done:
+ 0097  5A				pop	dx	
+ 0098  59				pop	cx
+ 0099  5B				pop	bx
+ 009A  58				pop	ax
+ 009B  9D				popf
+ 009C  5D				pop	bp
+ 009D  C3				ret
+ 009E				SafeRead ENDP
+
+ 009E				MemManage PROC
+ 009E  9C				pushf
+ 009F  83 F9 01				cmp	cx, 1
+ 00A2  74 0F				je	OoB
+ 00A4  83 F9 02				cmp	cx, 2
+ 00A7  74 27				je	good
+ 00A9  83 F9 03				cmp	cx, 3
+ 00AC  74 07				je	del
+ 00AE  83 F9 04				cmp	cx, 4
+ 00B1  74 1B				je	Ent
+					
+ 00B3				OoB:
+ 00B3  EB 2D				jmp	done
+
+ 00B5				del:
+ 00B5  83 FA 00				cmp	dx, 0
+ 00B8  74 28				je	done
+					;dec size
+ 00BA  4A				dec	dx	
+
+					;manage buffer
+ 00BB  E8 003D				Call	MemRemove
+					
+					;print del (move back cursor)
+ 00BE  E8 0023				call	PrintChar
+					
+					;print	" "
+ 00C1  50				push	ax
+ 00C2  B8 0020				mov	ax, " "
+ 00C5  E8 001C				call	PrintChar
+ 00C8  58				pop	ax
+
+					;print del again
+ 00C9  E8 0018				call	PrintChar
+					
+ 00CC  EB 14				jmp	done
+					
+ 00CE				Ent:
+ 00CE  EB 12				jmp	done
+ 00D0				good:
+ 00D0  51				push	cx
+ 00D1  8B 0E 0010 R			mov	cx, BSize
+ 00D5  49				dec	cx
+ 00D6  3B D1				cmp	dx, cx		;CMP SIZE of BUFFER - 1
+ 00D8  59				pop	cx
+ 00D9  74 07				je	done		;Jump is full and ignore char
+					
+ 00DB  E8 0006				Call	PrintChar
+ 00DE  E8 0013				Call	MemMove
+ 00E1  42				inc	dx
+					
+ 00E2				done:
+ 00E2  9D				popf
+ 00E3  C3				ret
+ 00E4				MemManage ENDP
+
+ 00E4				PrintChar Proc ; AL TAKES CHAR
+ 00E4  9C				pushf
+ 00E5  50				push	ax
+ 00E6  52				push	dx
+ 00E7  BA 0000				mov	dx, 0
+ 00EA  8B D0				mov	dx, ax
+ 00EC  B4 02				mov	ah, 02h
+ 00EE  CD 21				int	21h
+ 00F0  5A				pop	dx
+ 00F1  58				pop	ax
+ 00F2  9D				popf
+ 00F3  C3				ret
+ 00F4				PrintChar Endp
+
+ 00F4				MemMove Proc
+ 00F4  57				push	di
+ 00F5  8B FA				mov	di, dx
+ 00F7  88 01				mov	[bx + di], al
+ 00F9  5F				pop	di
+ 00FA  C3				ret
+ 00FB				MemMove Endp
+
+ 00FB				MemRemove Proc
+ 00FB  57				push	di
+ 00FC  52				push	dx
+ 00FD  B2 00				mov	dl, 0
+ 00FF  8B FA				mov	di, dx
+ 0101  88 11				mov	[bx + di], dl
+ 0103  5A				pop	dx
+ 0104  5F				pop	di
+ 0105  C3				ret
+ 0106				MemRemove Endp
+
+ 0106				body PROC
+				;BX = ADDRESS
+				;DX = SIZE - Running buffer size
+ 0106  9C				pushf
+ 0107  E8 FF09				Call	GetKey
+
+ 010A  B4 00				mov	ah, 0h
+					;al has key
+
+ 010C  50				push	ax
+ 010D  E8 FF0C				Call	ScanKey
+ 0110  83 C4 02				add	sp, 2
+					
+					;cx will hold 1 for a normal character
+					;key: 1 ascii(32-7eh), 0 for below, 2 del, 3 enter.
+					; cx = 3 just return
+ 0113  51				push	cx 
+ 0114  E8 FF87				Call	MemManage
+ 0117  83 C4 02				add	sp, 2
+ 011A  9D				popf
+ 011B  C3				ret
+ 011C				body ENDP
+
+				;--------------------------------- Delay ------------------------------------
+				; gets a number of mms from the stack and returns when that amount
+				; of time (in mms) has elapsed
+				; AH = 2Ch int 21h get system time -> CH = Hour, CL = min, DH = sec, DL = 1/10s
+				; check time fast and return
+
+ 011C				GetNow Proc
+ 011C  50				push	ax
+ 011D  B4 2C				mov	ah, 2Ch
+ 011F  CD 21				int	21h
+ 0121  58				pop	ax
+ 0122  C3				ret
+ 0123				GetNow Endp
+
+ 0123				TimeChange Proc
+ 0123  9C				pushf
+ 0124  E8 FFF5				call	GetNow
+ 0127  8A DA				mov	bl, dl
+ 0129				L1:
+ 0129  E8 FFF0				call	GetNow
+ 012C  38 D3				cmp	bl, dl
+ 012E  77 04				ja	L
+ 0130  72 0B				jb	G
+ 0132  EB F5				jmp	L1
+ 0134				L:
+ 0134  80 C2 64				add	dl, 100
+ 0137  2A D3				sub	dl, bl
+ 0139  8A DA				mov	bl, dl	
+ 013B  EB 04				jmp	done
+ 013D				G:
+ 013D  2A D3				sub	dl, bl
+ 013F  8A DA				mov	bl, dl
+ 0141				done:	
+ 0141  B7 00				mov	bh, 0
+ 0143  9D				popf
+ 0144  C3				ret
+ 0145				TimeChange Endp
+
+ 0145				Delay PROC
+ 0145  55				push	bp
+ 0146  8B EC				mov	bp, sp
+ 0148  9C				pushf
+ 0149  50				push	ax
+ 014A  53				push	bx
+ 014B  51				push	cx
+ 014C  52				push	dx
+ 014D  BA 0000				mov	dx, 0
+ 0150  BB 000A				mov	bx, 10
+ 0153  8B 46 04				mov	ax, [bp + 4] ; get mms
+ 0156  F7 F3				div	bx
+							;AX has Cent-secs
+ 0158  BB 0000				mov	bx, 0
+ 015B  E8 FFBE				call	GetNow
+ 015E				stall:
+ 015E  E8 FFC2				Call	TimeChange
+ 0161  2B C3				sub	ax, bx
+ 0163  72 02				jc	done
+ 0165  EB F7				jmp	stall
+ 0167				done:
+ 0167  5A				pop	dx
+ 0168  59				pop	cx
+ 0169  5B				pop	bx
+ 016A  58				pop	ax	
+ 016B  9D				popf
+ 016C  5D				pop	bp
+ 016D  C3				ret
+ 016E				Delay ENDP
+				END
+Microsoft (R) Macro Assembler Version 6.11		    11/11/18 22:57:20
+Project5						     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0012	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 016E	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+Delay  . . . . . . . . . . . . .	P Near	 0145	  _TEXT	Length= 0029 Public STDCALL
+  stall  . . . . . . . . . . . .	L Near	 015E	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0167	  _TEXT	
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+GetKey . . . . . . . . . . . . .	P Near	 0013	  _TEXT	Length= 0009 Public STDCALL
+GetNow . . . . . . . . . . . . .	P Near	 011C	  _TEXT	Length= 0007 Public STDCALL
+MemManage  . . . . . . . . . . .	P Near	 009E	  _TEXT	Length= 0046 Public STDCALL
+  OoB  . . . . . . . . . . . . .	L Near	 00B3	  _TEXT	
+  del  . . . . . . . . . . . . .	L Near	 00B5	  _TEXT	
+  Ent  . . . . . . . . . . . . .	L Near	 00CE	  _TEXT	
+  good . . . . . . . . . . . . .	L Near	 00D0	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 00E2	  _TEXT	
+MemMove  . . . . . . . . . . . .	P Near	 00F4	  _TEXT	Length= 0007 Public STDCALL
+MemRemove  . . . . . . . . . . .	P Near	 00FB	  _TEXT	Length= 000B Public STDCALL
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintChar  . . . . . . . . . . .	P Near	 00E4	  _TEXT	Length= 0010 Public STDCALL
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SafeRead . . . . . . . . . . . .	P Near	 0073	  _TEXT	Length= 002B Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 008D	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0097	  _TEXT	
+ScanKey  . . . . . . . . . . . .	P Near	 001C	  _TEXT	Length= 0057 Public STDCALL
+  get  . . . . . . . . . . . . .	L Near	 0027	  _TEXT	
+  OoB  . . . . . . . . . . . . .	L Near	 004A	  _TEXT	
+  del  . . . . . . . . . . . . .	L Near	 004F	  _TEXT	
+  Ent  . . . . . . . . . . . . .	L Near	 0054	  _TEXT	
+  CtrC . . . . . . . . . . . . .	L Near	 0059	  _TEXT	
+  norm . . . . . . . . . . . . .	L Near	 006B	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 006E	  _TEXT	
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TimeChange . . . . . . . . . . .	P Near	 0123	  _TEXT	Length= 0022 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0129	  _TEXT	
+  L  . . . . . . . . . . . . . .	L Near	 0134	  _TEXT	
+  G  . . . . . . . . . . . . . .	L Near	 013D	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0141	  _TEXT	
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+body . . . . . . . . . . . . . .	P Near	 0106	  _TEXT	Length= 0016 Public STDCALL
+func . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0013 Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+Abort  . . . . . . . . . . . . .	Byte	 0000	  _DATA	
+BSize  . . . . . . . . . . . . .	Word	 0010	  _DATA	
+
+	   0 Warnings
+	   0 Errors

@@ -1,0 +1,141 @@
+Microsoft (R) Macro Assembler Version 6.11		    09/29/18 17:56:48
+BOFA							     Page 1 - 1
+
+
+
+				Title BOFA
+				; Anthony Reyes	
+				; test for me
+				; MAIN
+
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				ArraySum	Proto
+				Fact		Proto
+				HexOut		Proto
+				PrintInt	Proto
+
+				.8086
+
+ 0000				.data
+
+ 0000 FFFC 0005 FFFF FFFF	arry	WORD	-4, 5, -1, -1
+ 0008 00			oof	byte	?
+ 0009 C0 FF EE 12 34 56		harry	byte	0C0h, 0FFh, 0EEh, 12h, 34h, 56h, 78h, 90h, 0BAh, 0BEh
+       78 90 BA BE
+ 0013 00			len	byte	?
+ 0000				.code
+
+ 0000				main proc
+ 0000  B8 ---- R			mov	ax, @data
+ 0003  8E D8				mov	ds, ax
+					
+				;	call	dumpregs
+				;	
+				;	mov	dl, 2
+				;	mov	bx, OFFSET arry
+				;	mov	cx, OFFSET oof - OFFSET arry
+				;	call	ArraySum
+					
+ 0005  E8 0000 E			call	dumpregs	
+
+				;	mov	ax, 9
+				;	call	fact
+				;	mov	dx, ax
+				;	call 	writeuint
+				;	call	newline
+				;	call	dumpregs	
+
+ 0008  BB 0009 R			mov	bx, OFFSET harry
+ 000B  B9 000A				mov	cx, offset len - offset harry
+					
+				;	mov	dx, cx
+				;	call	writeint
+				;	call	newline
+				;	
+ 000E  E8 0000 E			call	HexOut	
+
+				;	mov	ax, 0E168h
+				;	call	printint
+
+				;	mov	dl, 04h
+				;	call	phd
+
+ 0011  B8 4C00				mov	ax, 4C00h
+ 0014  CD 21				int	21h
+ 0016				main endp
+
+				end main
+Microsoft (R) Macro Assembler Version 6.11		    09/29/18 17:56:48
+BOFA							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0014	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0016	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+ArraySum . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Fact . . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+HexOut . . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0016 Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+arry . . . . . . . . . . . . . .	Word	 0000	  _DATA	
+harry  . . . . . . . . . . . . .	Byte	 0009	  _DATA	
+len  . . . . . . . . . . . . . .	Byte	 0013	  _DATA	
+oof  . . . . . . . . . . . . . .	Byte	 0008	  _DATA	
+
+	   0 Warnings
+	   0 Errors

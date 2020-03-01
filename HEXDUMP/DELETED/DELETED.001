@@ -1,0 +1,25 @@
+Title Main
+;Anthony Reyes
+;cs240
+;hexdump
+
+include cs240.inc
+
+.8086
+
+.data
+
+.code
+
+main Proc
+
+	mov	ax, @data
+	mov	ds, ax
+
+	call	Hexdump	
+
+	mov	ax, 4C00h
+	int	21h
+
+main endp
+end main

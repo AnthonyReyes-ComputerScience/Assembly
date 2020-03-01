@@ -1,0 +1,830 @@
+Microsoft (R) Macro Assembler Version 6.11		    10/03/18 11:13:54
+Hexdump							     Page 1 - 1
+
+
+				Title Hexdump
+				;Anthony Reyes
+				;Project 4
+				;CS 240
+
+
+				;MY ERROR SECTION/ WHAT NEEDS TO HAPPEN
+				;TEST
+				;clean filename function
+				; STAR IMPLEMENTAION
+
+				include cs240.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+				.386
+
+ 0000				.data
+ 0000 00000000			bytecount	DWORD	0h
+ 0004  0064 [			raw		BYTE	100 dup(0)
+        00
+       ]
+ 0068  0064 [			filename	BYTE	100 dup(0)
+        00
+       ]
+ 00CC  0011 [			buffer		BYTE	17 dup(0)
+        00
+       ]
+ 00DD  0011 [			alumbo		BYTE	17 dup(0)
+        00
+       ]
+ 00EE 0000			filehandle	WORD	?
+ 00F0 30 31 32 33 34 35		harry		BYTE	"0123456789abcdef"
+       36 37 38 39 61 62
+       63 64 65 66
+ 0100 59 4F 2C 20 59 4F		fee		BYTE	"YO, YOUR FILE DON'T OPEN", 0
+       55 52 20 46 49 4C
+       45 20 44 4F 4E 27
+       54 20 4F 50 45 4E
+       00
+
+ 0000				.code
+
+ 0000				cleanname proc
+ 0000  60				pusha	
+ 0001  BB 0004 R			mov	bx, offset raw
+ 0004  BD 0068 R			mov	bp, offset filename
+ 0007  BE 0000				mov	si, 0
+ 000A				L1:
+ 000A  8A 10				mov	dl, [bx + si]
+ 000C  80 FA 20				cmp	dl, 20h
+ 000F  74 19				je	BR
+ 0011				L2:
+ 0011  83 FE 64				cmp	si, 100
+ 0014  74 1E				je	done
+ 0016  3E: 88 56 00			mov	DS:[bp], dl
+ 001A  45				inc	bp
+ 001B  46				inc	si	
+ 001C  8A 10				mov	dl, [bx + si]
+ 001E  80 FA 20				cmp	dl, 20h
+ 0021  74 11				je	done
+ 0023  80 FA 00				cmp	dl, 0
+ 0026  74 0C				je	done
+ 0028  EB E7				jmp	L2
+
+ 002A				BR:
+ 002A  46				inc	si
+ 002B  8A 10				mov	dl, [bx + si]
+ 002D  80 FA 20				cmp	dl, 20h
+ 0030  74 F8				je	br
+ 0032  75 DD				jne	L2
+ 0034				done:		
+ 0034  61				popa
+ 0035  BB 0068 R			mov	bx, offset filename
+ 0038  C3				ret
+ 0039				cleanname endp
+
+				;MODIFIED ONLY 7e >  ASCIIZ > 32
+ 0039				PrintString Proc ; takes offset in DX and prints string
+ 0039  9C				pushf
+ 003A  50				push	ax
+ 003B  53				push	bx
+ 003C  52				push	dx
+
+ 003D  8B DA				mov	bx, dx
+ 003F  EB 09				jmp	print
+ 0041				dot:
+ 0041  B2 2E				mov	dl, "."
+ 0043  B4 02				mov	ah, 02h
+ 0045  CD 21				int	21h
+ 0047  43				inc	bx
+ 0048  EB 00				jmp	print
+ 004A				print:
+ 004A  8A 17				mov	dl, [bx]
+ 004C  80 FA 00				cmp	dl, 0
+ 004F  74 11				je	brk
+
+ 0051  80 FA 7E				cmp	dl, 126
+ 0054  7F EB				jg	dot
+
+ 0056  80 FA 20				cmp	dl, 32
+ 0059  7C E6				jl	dot
+ 005B  B4 02				mov	ah, 02h
+ 005D  CD 21				int	21h
+ 005F  43				inc	bx
+ 0060  EB E8				jmp	print
+ 0062				brk:
+ 0062  5A				pop	dx
+ 0063  5B				pop	bx
+ 0064  58				pop	ax
+ 0065  9D				popf
+ 0066  C3				ret
+ 0067				PrintString endP
+
+ 0067				SegCopy proc
+				; SegCopy:takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+				; return in BX of file address (OFFSET filename)
+ 0067  9C				pushf
+ 0068  52				push	dx
+ 0069  57				push	di
+ 006A  56				push	si
+ 006B  51				push	cx
+
+ 006C  BE 0000				mov	si, 0
+ 006F  BB 0004 R			mov	bx, OFFSET raw
+
+ 0072  B5 00				mov	ch, 0
+ 0074  26: 8A 0D			mov	cl, ES:[di]
+
+ 0077  47				inc	di
+
+ 0078				L1:
+ 0078  83 F9 00				cmp	cx, 0
+ 007B  74 0A				je	brk
+ 007D  26: 8A 15			mov	dl, ES:[di]
+
+ 0080  88 10				mov	DS:[bx + si], dl
+
+ 0082  47				inc	di
+ 0083  46				inc	si
+ 0084  49				dec	cx
+ 0085  EB F1				jmp	L1
+
+ 0087				brk:
+ 0087  59				pop	cx
+ 0088  5E				pop	si
+ 0089  5F				pop	di
+ 008A  5A				pop	dx
+ 008B  9D				popf
+ 008C  C3				ret
+ 008D				SegCopy endP
+
+ 008D				getFileName Proc
+				; return in bx location of file name in DS (DS:[bx])
+				; SegCopy: takes di and copies into DS:filename (DS:[bx + si]) from EX:[di++]
+ 008D  9C				pushf
+ 008E  50				push	ax
+ 008F  57				push	di
+ 0090  06				push	ES
+
+ 0091  B4 62				mov	ah, 62h
+ 0093  CD 21				int	21h     ;put PSP in bx
+
+ 0095  8E C3				mov	ES, bx
+ 0097  BF 0080				mov	di, 80h
+
+ 009A  E8 FFCA				call	segCopy  ;file name @ in bx
+
+ 009D  07				pop	ES
+ 009E  5F				pop	di
+ 009F  58				pop	ax
+ 00A0  9D				popf
+ 00A1  C3				ret
+ 00A2				getFileName endP
+
+ 00A2				openFile proc
+ 00A2  52				push	dx
+
+ 00A3  8B D3				mov	dx, bx
+ 00A5  B0 00				mov	al, 0
+
+ 00A7  B4 3D				mov	ah, 3dh ; ax takes file handle for reading
+ 00A9  CD 21				int	21h
+ 00AB  5A				pop	dx
+ 00AC  C3				ret
+ 00AD				openFile endp
+
+ 00AD				inccount proc ; TAKES EAX PARAM TO INC 	
+
+ 00AD  66| 2B C9			sub	ecx, ecx
+ 00B0  66| 03 0E 0000 R			add	ecx, bytecount
+ 00B5  66| 03 C8			add	ecx, eax
+ 00B8  66| 89 0E 0000 R			mov	bytecount, ecx
+					
+ 00BD  C3				ret	
+ 00BE				inccount endp
+
+ 00BE				loadBuffer proc ; ret amount of bytes read in ax check for carry
+
+ 00BE  53				push	bx
+ 00BF  51				push	cx
+ 00C0  52				push	dx
+ 00C1  EB 07				jmp	go
+ 00C3				spec:
+ 00C3  C6 06 00CC R 00			mov	buffer, 0
+ 00C8  EB 19				jmp	brk
+ 00CA				go:
+ 00CA  8B 1E 00EE R			mov	bx, filehandle
+ 00CE  B9 0010				mov	cx, 10h
+ 00D1  BA 00CC R			mov	dx, offset buffer
+ 00D4  66| B8 00000000			mov	eax, 0
+
+ 00DA  B4 3F				mov	ah, 3Fh; read
+ 00DC  CD 21				int	21h
+
+ 00DE  83 F8 00				cmp	ax, 0
+ 00E1  74 E0				je	spec
+ 00E3				brk:
+
+ 00E3  5A				pop	dx
+ 00E4  59				pop	cx
+ 00E5  5B				pop	bx
+ 00E6  C3				ret
+ 00E7				loadBuffer endp   ; ax = amount of bytes read
+
+ 00E7				counterout proc
+ 00E7  66| 52				push	edx	
+ 00E9  66| 8B 16 0000 R			mov	edx, bytecount 
+ 00EE  B9 0008				mov	cx, 8
+ 00F1  EB 00				jmp	L1
+
+ 00F3				L1:
+ 00F3  83 F9 00				cmp	cx, 0
+ 00F6  74 0A				je	done
+ 00F8  66| C1 C2 04			rol	edx, 4	
+ 00FC  E8 0138				call	PHD
+ 00FF  49				dec	cx
+ 0100  EB F1				jmp	L1
+ 0102				done:
+ 0102  66| 5A				pop	edx
+ 0104  C3				ret
+ 0105				counterout endp
+
+ 0105				fill proc
+ 0105  50				push	ax
+ 0106  53				push	bx
+ 0107  BB 0010				mov	bx, 10h
+ 010A  2B D8				sub	bx, ax
+ 010C  8B C3				mov	ax, bx
+ 010E  83 F8 08				cmp	ax, 8
+ 0111  7E 03				jle	L1
+ 0113  E8 0213				call	space
+ 0116				L1:
+ 0116  83 F8 00				cmp	ax, 0
+ 0119  74 0C				je	done
+ 011B  E8 020B				call	space
+ 011E  E8 0208				call	space
+ 0121  E8 0205				call	space
+ 0124  48				dec	ax
+ 0125  EB EF				jmp	L1	
+ 0127				done:
+ 0127  5B				pop	bx
+ 0128  58				pop	ax
+ 0129  C3				ret
+ 012A				fill endp
+
+ 012A				compare proc      ;CX rets 0 if same and 1 if not (alumbo == buffer) 
+ 012A  50				push	ax
+ 012B  53				push	bx
+ 012C  52				push	dx
+ 012D  55				push	bp
+ 012E  56				push	si
+ 012F  BB 00CC R			mov	bx, offset buffer
+ 0132  BD 00DD R			mov	bp, offset alumbo ; bp must use DS:[bp + si]
+ 0135  B1 00				mov	cl, 0
+ 0137  B8 0000				mov	ax, 0
+ 013A  BA 0000				mov	dx, 0
+ 013D  BE 0000				mov	si, 0
+ 0140				L1:
+ 0140  83 FE 10				cmp	si, 10h
+ 0143  74 0E				je	done
+ 0145  8A 00				mov	al, [bx + si]
+ 0147  3E: 8A 12			mov	dl, DS:[bp + si]
+ 014A  46				inc	si
+ 014B  3B C2				cmp	ax, dx
+ 014D  74 F1				je	L1
+ 014F  75 00				jne	diff
+
+ 0151				diff:	
+ 0151  B1 01				mov	cl, 1
+						
+ 0153				done:
+ 0153  5E				pop	si
+ 0154  5D				pop	bp
+ 0155  5A				pop	dx
+ 0156  5B				pop	bx
+ 0157  58				pop	ax
+ 0158  C3				ret
+ 0159				compare endp
+
+ 0159				copyB proc	;COPY BUFFER TO ALUMBO (alumbo = buffer)
+ 0159  50				push	ax
+ 015A  53				push	bx
+ 015B  55				push	bp
+ 015C  56				push	si
+ 015D  BE 0000				mov	si, 0
+ 0160  BB 00CC R			mov	bx, offset buffer
+ 0163  BD 00DD R			mov	bp, offset alumbo ; bp must use DS:[bp + si]
+ 0166  B8 0000				mov	ax, 0
+ 0169				L1:
+ 0169  83 FE 10				cmp	si, 10h
+ 016C  74 08				je	done
+ 016E  8A 00				mov	al, [bx + si]
+ 0170  3E: 88 02			mov	DS:[bp + si], al
+ 0173  46				inc	si
+ 0174  EB F3				jmp	L1
+					
+ 0176				done:
+ 0176  5E				pop	si
+ 0177  5D				pop	bp
+ 0178  5B				pop	bx
+ 0179  58				pop	ax
+ 017A  C3				ret	
+ 017B				copyB endp
+
+ 017B				body proc
+ 017B  9C				pushf
+ 017C  50				push	ax
+ 017D  53				push	bx
+ 017E  51				push	cx
+ 017F  52				push	dx
+ 0180  56				push	si
+ 0181  B8 0010				mov	ax, 10h
+ 0184  BA 0000				mov	dx, 0
+ 0187  EB 12				jmp	L1
+
+ 0189				star:   ; si is 1 if start already was happening
+ 0189  83 FE 00				cmp	si, 0
+ 018C  74 02				je	s2
+ 018E  EB 0B				jmp	L1
+ 0190				s2:
+ 0190  E8 018B				call	starPrint
+ 0193  E8 0137				call	NL
+ 0196  BE 0001				mov	si, 1
+ 0199  EB 00				jmp	L1		
+ 019B				L1:
+ 019B  E8 FF20				call	loadbuffer
+ 019E  83 F8 00				cmp	ax, 0
+ 01A1  74 58				je	done	
+					
+ 01A3  E8 FF07				call	inccount	
+					; DX CONSIDERS FIRST RUN 0 is first 1 is not
+ 01A6  83 FA 00				cmp	dx, 0
+ 01A9  74 08				je      first
+
+ 01AB  E8 FF7C				call	compare ; cx 0 if same and 1 if not (in terms of prev buffer)
+ 01AE  83 F9 00				cmp	cx, 0
+ 01B1  74 D6				je	star
+ 01B3				first:
+ 01B3  E8 FF31				call	counterout
+ 01B6  E8 FFA0				call	copyB
+ 01B9  BE 0000				mov	si, 0
+ 01BC  E8 016A				call	space
+ 01BF  E8 0167				call	space	
+
+ 01C2  BB 00CC R			mov	bx, offset buffer
+ 01C5  8B C8				mov	cx, ax ; for hexout and printbuffer
+ 01C7  E8 0090				call	Hexout
+					
+ 01CA  83 F8 10				cmp	ax, 10h
+ 01CD  7C 17				jl	shortline
+						
+
+ 01CF  E8 0157				call	space
+ 01D2  E8 013E				call	bar
+					
+ 01D5  E8 0108				call	PrintBuffer
+					
+ 01D8  E8 0138				call	bar
+					
+ 01DB  E8 00EF				call	NL
+ 01DE  BA 0001				mov	dx, 1
+ 01E1  B8 0000				mov	ax, 0
+ 01E4  EB B5				jmp	L1
+
+ 01E6				shortline:
+ 01E6  E8 FF1C				call	fill
+ 01E9  E8 013D				call	space
+ 01EC  E8 0124				call	bar
+ 01EF  BA 00CC R		 	mov	dx, offset buffer
+ 01F2  E8 00EB				call	PrintBuffer
+ 01F5  E8 011B				call	bar
+ 01F8  E8 00D2				call	NL
+
+
+ 01FB				done:
+ 01FB  5E				pop	si
+ 01FC  5A				pop	dx
+ 01FD  59				pop	cx
+ 01FE  5B				pop	bx
+ 01FF  58				pop	ax
+ 0200  9D				popf
+ 0201  C3				ret
+ 0202				body endp
+
+
+
+				; Hexdump is well functioning hexdump
+				; Cons:
+				; - Weak error support
+				; - Couldn't figure out diff in unix so the exact output
+				;    matching might not work
+				; - Doesn't open empty file (there was a bug with my empty file reading)
+
+				; Pros:
+				; Works like normal hexdump:
+				; 1) Extract file name and place into memory cleanly (without leading or
+				;    trailing spaces
+				; 2) reads file in groups of 16 while keeping the offset of the file on the 
+				;    left in hex displays a byte by byte hex representaion of the file along
+				;    with the original text with pipes surrounding
+				; 3) represents ditto groups of 16 as one * ( correction it stoped working 
+				; 4) displays the total amount of bytes at the bottom left
+ 0202				Hexdump Proc
+ 0202  B8 ---- R			mov	ax, @data
+ 0205  8E D8				mov	ds, ax
+ 0207  EB 08				jmp	strt
+ 0209				Fe:
+ 0209  BA 0100 R			mov	dx, offset fee
+ 020C  E8 FE2A				call	PrintString
+ 020F  EB 16				jmp	done
+
+ 0211				strt:
+ 0211  E8 FE79				call	getFileName 	;file @ in bx
+ 0214  E8 FDE9				call	cleanname	
+
+ 0217  9C				pushf
+ 0218  E8 FE87				call	openFile
+ 021B  72 EC				jc	Fe
+ 021D  9D				popf
+					;ax has file handle
+
+ 021E  A3 00EE R			mov	filehandle, ax
+
+ 0221  E8 FF57				call	body
+					;16 print hex 16 print ascii after "  |~~~~~~|"
+ 0224  E8 FEC0				call	counterout
+ 0227				done:
+ 0227  E8 0005				call	close
+ 022A  B8 4C00				mov	ax, 4C00h
+ 022D  CD 21				int	21h
+ 022F				Hexdump endp
+
+ 022F				close proc
+ 022F  60				pusha
+					
+ 0230  8B D8				mov	bx, ax	
+ 0232  B4 3E				mov	ah, 3eh
+ 0234  CD 15				int	21
+					
+ 0236  61				popa
+ 0237				close endp
+
+				;PRINTHEXDIGIT from P2
+ 0237				PHD proc
+ 0237  9C				pushf
+ 0238  50				push	ax
+ 0239  53				push	bx
+ 023A  51				push	cx
+ 023B  52				push	dx
+ 023C  56				push	si
+
+ 023D  BB 00F0 R			mov	bx, OFFSET harry
+ 0240  B1 04				mov	cl, 4
+
+ 0242  D2 E2				shl	dl, cl
+ 0244  B8 0000				mov	ax, 0000h
+ 0247  8A C2				mov	al, dl
+ 0249  D3 E8				shr	ax, cl
+ 024B  8B F0				mov	si, ax
+
+ 024D  8A 10				mov	dl, [bx + si]
+ 024F  B4 02				mov	ah, 02h
+ 0251  CD 21				int	21h
+
+ 0253  5E				pop	si
+ 0254  5A				pop	dx
+ 0255  59				pop	cx
+ 0256  5B				pop	bx
+ 0257  58				pop	ax
+ 0258  9D				popf
+ 0259  C3				ret
+ 025A				PHD endp
+
+				; BX is the address of an array of bytes and CX is the len
+				; write each byte of the array followed by a space
+				; MODIFIED: Every 8the byte in the list has a double space after
+				; made a secion for DSpace and moved some loops
+ 025A				HexOut proc
+ 025A  9C				pushf
+ 025B  50				push	ax
+ 025C  53				push	bx
+ 025D  51				push	cx
+ 025E  52				push	dx
+ 025F  57				push	di
+ 0260  56				push	si
+
+ 0261  8B C1				mov	ax, cx
+ 0263  BF 00F0 R			mov	di, OFFSET harry
+ 0266  B1 04				mov	cl, 4 ;byte sft
+ 0268  BE 0000				mov	si, 0
+ 026B  EB 0A				jmp	L1
+ 026D				DSpace:
+ 026D  50				push	ax
+ 026E  B2 20				mov	dl, " "		; space
+ 0270  B4 02				mov	ah, 02h
+ 0272  CD 21				int	21h
+ 0274  58				pop	ax
+ 0275  EB 1D				jmp 	incre		
+
+ 0277				L1:
+				;------------------ one byte-------------
+ 0277  3B F0				cmp	si, ax     ;; first digit
+ 0279  73 1C				jae	done
+ 027B  8A 10				mov	dl, [bx + si]
+ 027D  52				push	dx
+ 027E  D2 EA				shr	dl, cl	   ;; 10h -> 01h
+ 0280  E8 FFB4				call	PHD
+
+ 0283  5A				pop	dx		;2nd digit
+ 0284  E8 FFB0				call	PHD
+				;---------------------------------
+ 0287  50				push	ax
+ 0288  B2 20				mov	dl, " "		; space
+ 028A  B4 02				mov	ah, 02h
+ 028C  CD 21				int	21h
+ 028E  58				pop	ax
+					
+ 028F  83 FE 07				cmp	si, 7
+ 0292  74 D9				je	DSpace
+ 0294				incre:
+
+ 0294  46				inc	si
+ 0295  EB E0				jmp	L1
+
+ 0297				done:
+ 0297  5E				pop	si
+ 0298  5F				pop	di
+ 0299  5A				pop	dx
+ 029A  59				pop	cx
+ 029B  5B				pop	bx
+ 029C  58				pop	ax
+ 029D  9D				popf
+ 029E  C3				ret
+ 029F				HexOut endp
+
+				; OG HEXOUT NO SPACES
+ 029F				HO proc
+ 029F  9C				pushf
+ 02A0  50				push	ax
+ 02A1  53				push	bx
+ 02A2  51				push	cx
+ 02A3  52				push	dx
+ 02A4  57				push	di
+ 02A5  56				push	si
+
+ 02A6  8B C1				mov	ax, cx
+ 02A8  BF 00F0 R			mov	di, OFFSET harry
+ 02AB  B1 04				mov	cl, 4 ;byte sft
+ 02AD  BE 0000				mov	si, 0
+ 02B0  EB 00				jmp	L1
+
+ 02B2				L1:
+				;------------------ one byte-------------
+ 02B2  3B F0				cmp	si, ax     ;; first digit
+ 02B4  73 0F				jae	done
+ 02B6  8A 10				mov	dl, [bx + si]
+ 02B8  52				push	dx
+ 02B9  D2 EA				shr	dl, cl	   ;; 10h -> 01h
+ 02BB  E8 FF79				call	PHD
+
+ 02BE  5A				pop	dx		;2nd digit
+ 02BF  E8 FF75				call	PHD
+				;---------------------------------	
+ 02C2  46				inc	si
+ 02C3  EB ED				jmp	L1
+
+ 02C5				done:
+ 02C5  5E				pop	si
+ 02C6  5F				pop	di
+ 02C7  5A				pop	dx
+ 02C8  59				pop	cx
+ 02C9  5B				pop	bx
+ 02CA  58				pop	ax
+ 02CB  9D				popf
+ 02CC  C3				ret
+ 02CD				HO endp
+
+ 02CD				NL proc
+ 02CD  9C				pushf
+ 02CE  52				push	dx
+ 02CF  50				push	ax
+
+ 02D0  B2 0D				mov	dl, 0dh		; CR
+ 02D2  B4 02				mov	ah, 02h
+ 02D4  CD 21				int	21h
+					
+ 02D6  B2 0A				mov	dl, 0ah		; NL
+ 02D8  B4 02				mov	ah, 02h
+ 02DA  CD 21				int	21h
+					
+ 02DC  58				pop	ax
+ 02DD  5A				pop	dx
+ 02DE  9D				popf
+ 02DF  C3				ret
+ 02E0				NL endp
+
+
+				;MODIFIED ONLY 7e >  ASCIIZ > 32
+ 02E0				PrintBuffer Proc ; takes offset in DX and buffer len in CX and prints string
+ 02E0  9C				pushf
+ 02E1  50				push	ax
+ 02E2  53				push	bx
+ 02E3  52				push	dx
+ 02E4  51				push	cx
+					
+ 02E5  BB 00CC R			mov	bx, offset buffer
+ 02E8  EB 0A				jmp	print
+ 02EA				dot:
+ 02EA  B2 2E				mov	dl, "."
+ 02EC  B4 02				mov	ah, 02h
+ 02EE  CD 21				int	21h
+ 02F0  43				inc	bx
+ 02F1  49				dec	cx
+ 02F2  EB 00				jmp	print
+ 02F4				print:
+ 02F4  8A 17				mov	dl, [bx]
+ 02F6  83 F9 00				cmp	cx, 0
+ 02F9  74 12				je	brk
+
+ 02FB  80 FA 7E				cmp	dl, 126
+ 02FE  7F EA				jg	dot
+
+ 0300  80 FA 20				cmp	dl, 32
+ 0303  7C E5				jl	dot
+ 0305  B4 02				mov	ah, 02h
+ 0307  CD 21				int	21h
+ 0309  43				inc	bx
+ 030A  49				dec	cx
+ 030B  EB E7				jmp	print
+ 030D				brk:
+ 030D  59				pop	cx
+ 030E  5A				pop	dx
+ 030F  5B				pop	bx
+ 0310  58				pop	ax
+ 0311  9D				popf
+ 0312  C3				ret
+ 0313				PrintBuffer endP
+
+ 0313				bar proc
+ 0313  52				push	dx		
+ 0314  50				push	ax
+ 0315  B2 7C				mov	dl, "|"		; bar
+ 0317  B4 02				mov	ah, 02h
+ 0319  CD 21				int	21h
+ 031B  58				pop	ax
+ 031C  5A				pop	dx
+ 031D  C3				ret
+ 031E				bar endp
+
+
+ 031E				starPrint proc
+ 031E  52				push	dx		
+ 031F  50				push	ax
+ 0320  B2 2A				mov	dl, "*"		; space
+ 0322  B4 02				mov	ah, 02h
+ 0324  CD 21				int	21h
+ 0326  58				pop	ax
+ 0327  5A				pop	dx
+ 0328  C3				ret
+ 0329				starPrint endp
+
+
+ 0329				space proc
+ 0329  52				push	dx		
+ 032A  50				push	ax
+ 032B  B2 20				mov	dl, " "		; space
+ 032D  B4 02				mov	ah, 02h
+ 032F  CD 21				int	21h
+ 0331  58				pop	ax
+ 0332  5A				pop	dx
+ 0333  C3				ret
+ 0334				space endp
+
+				end Hexdump
+Microsoft (R) Macro Assembler Version 6.11		    10/03/18 11:13:54
+Hexdump							     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+DGROUP . . . . . . . . . . . . .	GROUP
+_DATA  . . . . . . . . . . . . .	16 Bit	 0119	  Word	  Public  'DATA'	
+STACK  . . . . . . . . . . . . .	16 Bit	 0200	  Para	  Stack	  'STACK'	 
+_TEXT  . . . . . . . . . . . . .	16 Bit	 0334	  Word	  Public  'CODE'	
+
+
+Procedures,  parameters and locals:
+
+                N a m e                 Type     Value    Attr
+
+DumpLongRegs . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpMem  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+HO . . . . . . . . . . . . . . .	P Near	 029F	  _TEXT	Length= 002E Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 02B2	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 02C5	  _TEXT	
+HexOut . . . . . . . . . . . . .	P Near	 025A	  _TEXT	Length= 0045 Public STDCALL
+  DSpace . . . . . . . . . . . .	L Near	 026D	  _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 0277	  _TEXT	
+  incre  . . . . . . . . . . . .	L Near	 0294	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0297	  _TEXT	
+Hexdump  . . . . . . . . . . . .	P Near	 0202	  _TEXT	Length= 002D Public STDCALL
+  Fe . . . . . . . . . . . . . .	L Near	 0209	  _TEXT	
+  strt . . . . . . . . . . . . .	L Near	 0211	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0227	  _TEXT	
+NL . . . . . . . . . . . . . . .	P Near	 02CD	  _TEXT	Length= 0013 Public STDCALL
+NewLine  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+PHD  . . . . . . . . . . . . . .	P Near	 0237	  _TEXT	Length= 0023 Public STDCALL
+PrintBuffer  . . . . . . . . . .	P Near	 02E0	  _TEXT	Length= 0033 Public STDCALL
+  dot  . . . . . . . . . . . . .	L Near	 02EA	  _TEXT	
+  print  . . . . . . . . . . . .	L Near	 02F4	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 030D	  _TEXT	
+PrintString  . . . . . . . . . .	P Near	 0039	  _TEXT	Length= 002E Public STDCALL
+  dot  . . . . . . . . . . . . .	L Near	 0041	  _TEXT	
+  print  . . . . . . . . . . . .	L Near	 004A	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0062	  _TEXT	
+PrintVersion . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexByte  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexDigit . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadHexWord  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+ReadLine . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+SegCopy  . . . . . . . . . . . .	P Near	 0067	  _TEXT	Length= 0026 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0078	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 0087	  _TEXT	
+SkipToEOL  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+TraceRegisterChanges . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+Version  . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteBit . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexByte . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexDigit  . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexLong . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteHexWord . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+WriteUInt  . . . . . . . . . . .	P Near	 0000	  Length= 0000 External STDCALL
+bar  . . . . . . . . . . . . . .	P Near	 0313	  _TEXT	Length= 000B Public STDCALL
+body . . . . . . . . . . . . . .	P Near	 017B	  _TEXT	Length= 011A Public STDCALL
+  star . . . . . . . . . . . . .	L Near	 0189	  _TEXT	
+  s2 . . . . . . . . . . . . . .	L Near	 0190	  _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 019B	  _TEXT	
+  first  . . . . . . . . . . . .	L Near	 01B3	  _TEXT	
+  shortline  . . . . . . . . . .	L Near	 01E6	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 01FB	  _TEXT	
+cleanname  . . . . . . . . . . .	P Near	 0000	  _TEXT	Length= 0039 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 000A	  _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 0011	  _TEXT	
+  BR . . . . . . . . . . . . . .	L Near	 002A	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0034	  _TEXT	
+close  . . . . . . . . . . . . .	P Near	 022F	  _TEXT	Length= 0008 Public STDCALL
+compare  . . . . . . . . . . . .	P Near	 012A	  _TEXT	Length= 002F Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0140	  _TEXT	
+  diff . . . . . . . . . . . . .	L Near	 0151	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0153	  _TEXT	
+copyB  . . . . . . . . . . . . .	P Near	 0159	  _TEXT	Length= 0022 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0169	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0176	  _TEXT	
+counterout . . . . . . . . . . .	P Near	 00E7	  _TEXT	Length= 001E Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 00F3	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0102	  _TEXT	
+fill . . . . . . . . . . . . . .	P Near	 0105	  _TEXT	Length= 0025 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 0116	  _TEXT	
+  done . . . . . . . . . . . . .	L Near	 0127	  _TEXT	
+getFileName  . . . . . . . . . .	P Near	 008D	  _TEXT	Length= 0015 Public STDCALL
+inccount . . . . . . . . . . . .	P Near	 00AD	  _TEXT	Length= 0011 Public STDCALL
+loadBuffer . . . . . . . . . . .	P Near	 00BE	  _TEXT	Length= 0029 Public STDCALL
+  spec . . . . . . . . . . . . .	L Near	 00C3	  _TEXT	
+  go . . . . . . . . . . . . . .	L Near	 00CA	  _TEXT	
+  brk  . . . . . . . . . . . . .	L Near	 00E3	  _TEXT	
+openFile . . . . . . . . . . . .	P Near	 00A2	  _TEXT	Length= 000B Public STDCALL
+space  . . . . . . . . . . . . .	P Near	 0329	  _TEXT	Length= 000B Public STDCALL
+starPrint  . . . . . . . . . . .	P Near	 031E	  _TEXT	Length= 000B Public STDCALL
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 0000h	 
+@DataSize  . . . . . . . . . . .	Number	 0000h	 
+@Interface . . . . . . . . . . .	Number	 0003h	 
+@Model . . . . . . . . . . . . .	Number	 0002h	 
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 DGROUP
+@fardata?  . . . . . . . . . . .	Text   	 FAR_BSS
+@fardata . . . . . . . . . . . .	Text   	 FAR_DATA
+@stack . . . . . . . . . . . . .	Text   	 DGROUP
+alumbo . . . . . . . . . . . . .	Byte	 00DD	  _DATA	
+buffer . . . . . . . . . . . . .	Byte	 00CC	  _DATA	
+bytecount  . . . . . . . . . . .	DWord	 0000	  _DATA	
+fee  . . . . . . . . . . . . . .	Byte	 0100	  _DATA	
+filehandle . . . . . . . . . . .	Word	 00EE	  _DATA	
+filename . . . . . . . . . . . .	Byte	 0068	  _DATA	
+harry  . . . . . . . . . . . . .	Byte	 00F0	  _DATA	
+raw  . . . . . . . . . . . . . .	Byte	 0004	  _DATA	
+
+	   0 Warnings
+	   0 Errors
